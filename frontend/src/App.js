@@ -74,7 +74,7 @@ const App = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Person updated:', data, editIndex); // Debug log
+      console.log('Person updated:', data); // Debug log
       setNewPerson('');
       setEditIndex(null);
       await fetchPeople();

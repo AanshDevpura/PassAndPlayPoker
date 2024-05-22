@@ -3,10 +3,10 @@ from flask_cors import CORS
 import pymongo
 from pymongo import MongoClient
 from bson import ObjectId, errors
+import certifi
 
-# Connect to MongoDB
-cluster = MongoClient("mongodb+srv://adevpura05:<Joemama$12345>@pokercluster.rqleeom.mongodb.net/?retryWrites=true&w=majority&appName=PokerCluster")
-db = cluster["PokerCluster"]
+cluster = MongoClient("mongodb+srv://adevpura05:Devpura1@cluster0.yzk2hoy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", tlsCAFile=certifi.where())
+db = cluster["cluster0"]
 people_collection = db["people"]
 
 app = Flask(__name__)
@@ -21,6 +21,8 @@ clear_database()
 @app.route("/people", methods=["GET"])
 def get_people():
     people = list(people_collection.find())
+    for person in people:
+        person["_id"] = str(person["_id"])
     return jsonify(people)
 
 @app.route("/people", methods=["POST"])
