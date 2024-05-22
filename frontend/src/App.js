@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom';
 import './App.css';
+import NamesList from './components/NamesList';
+import NamesForm from './components/NamesForm';
 
 const App = () => {
   const [people, setPeople] = useState([]);
-  const [newPerson, setNewPerson] = useState('');
+  const [newPerson, setNewPerson] = useState({ name: '', dollars: '' });
   const [editIndex, setEditIndex] = useState(null);
 
   useEffect(() => {
@@ -28,8 +31,8 @@ const App = () => {
       alert('Cannot add more than 10 people');
       return;
     }
-    if (newPerson.trim() === '') {
-      alert('Name is required');
+    if (newPerson.name.trim() === '' || newPerson.dollars.trim() === '') {
+      alert('Name and dollar amount are required');
       return;
     }
     try {
@@ -38,14 +41,14 @@ const App = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name: newPerson }),
+        body: JSON.stringify(newPerson),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       console.log('Person added:', data); // Debug log
-      setNewPerson('');
+      setNewPerson({ name: '', dollars: '' });
       await fetchPeople();
     } catch (error) {
       console.error('Error adding person:', error);
@@ -54,12 +57,13 @@ const App = () => {
 
   const handleEditPerson = (person) => {
     setEditIndex(person._id);
-    setNewPerson(person.name);
+    setNewPerson({ name: person.name, dollars: person.dollars.toString() });
   };
 
   const handleUpdatePerson = async () => {
-    if (newPerson.trim() === '') {
-      alert('Name is required');
+    console.log(newPerson.dollars)
+    if (newPerson.name.trim() === '' || newPerson.dollars.trim() === '') {
+      alert('Name and dollar amount are required');
       return;
     }
     try {
@@ -68,14 +72,14 @@ const App = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name: newPerson }),
+        body: JSON.stringify(newPerson),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       console.log('Person updated:', data); // Debug log
-      setNewPerson('');
+      setNewPerson({ name: '', dollars: '' });
       setEditIndex(null);
       await fetchPeople();
     } catch (error) {
@@ -102,47 +106,19 @@ const App = () => {
   return (
     <div className="App">
       <h1>People</h1>
-      <div className="input-button-container">
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={newPerson}
-          onChange={(e) => setNewPerson(e.target.value)}
-        />
-        {editIndex !== null ? (
-          <button className="button-update" onClick={handleUpdatePerson}>
-            Update Person
-          </button>
-        ) : (
-          <button className="button-add" onClick={handleAddPerson}>
-            Add Person
-          </button>
-        )}
-      </div>
-      <ul>
-        {people.map((person) => (
-          <li key={person._id}>
-            {person.name}
-            <div className="button-container">
-              <button
-                className="button-update"
-                onClick={() => handleEditPerson(person)}
-                disabled={editIndex !== null}
-              >
-                Edit
-              </button>
-              <button
-                className="button-delete"
-                onClick={() => handleDeletePerson(person._id)}
-                disabled={editIndex !== null}
-              >
-                Delete
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <NamesForm
+        newPerson={newPerson}
+        setNewPerson={setNewPerson}
+        handleAddPerson={handleAddPerson}
+        handleUpdatePerson={handleUpdatePerson}
+        editIndex={editIndex}
+      />
+      <NamesList
+        people={people}
+        handleEditPerson={handleEditPerson} 
+        handleDeletePerson={handleDeletePerson}
+        editIndex={editIndex}
+      />
     </div>
   );
 };

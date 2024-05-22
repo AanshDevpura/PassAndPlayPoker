@@ -1,0 +1,39 @@
+  ul {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  
+  li {
+    margin-bottom: 10px;
+    padding: 5px;
+    background-color: #e7e7e7;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .button-container {
+    display: flex;
+    gap: 10px;
+  }
+  
+  li button {
+    margin-left: 0;
+  }
+  
+  .button-delete {
+    background-color: #F44336;
+  }
+
+  .name-and-dollars {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+    flex-grow: 1;
+    padding: 10px;
+    margin-right: 10px;
+    background-color: #f9f9f9;
+  }
+  
