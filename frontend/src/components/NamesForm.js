@@ -3,6 +3,15 @@ import './NamesForm.css';
 
 const NamesForm = ({ newPerson, setNewPerson, handleAddPerson, handleUpdatePerson, editIndex }) => {
   
+  const handleDollarsChange = (e) => {
+    if (e.target.value < 0) {
+      setNewPerson({ ...newPerson, dollars: '' });
+      alert("Please enter a positive number for dollars.");
+    } else {
+      setNewPerson({ ...newPerson, dollars: e.target.value });
+    }
+  };
+
   return (
     <div className="input-button-container">
       <input
@@ -16,9 +25,10 @@ const NamesForm = ({ newPerson, setNewPerson, handleAddPerson, handleUpdatePerso
         type="number"
         name="dollars"
         placeholder="Dollars"
+        min = "0"
+        step = "10"
         value={newPerson.dollars}
-        min="0" // Setting the min attribute to enforce a minimum value of 0
-        onChange={(e) => setNewPerson({ ...newPerson, dollars: e.target.value })}
+        onChange={handleDollarsChange}
       />
       {editIndex !== null ? (
         <button className="button-update" onClick={handleUpdatePerson}>
