@@ -3,12 +3,14 @@ import './Start.css';
 import NamesList from './NamesList';
 import NamesForm from './NamesForm';
 import { fetchPeople } from './Api';
-import {Link } from 'react-router-dom';
+import {useNavigate } from 'react-router-dom';
 
 const Start = () => {
   const [people, setPeople] = useState([]);
   const [newPerson, setNewPerson] = useState({ name: '', dollars: '' });
   const [editIndex, setEditIndex] = useState(null);
+  const [bigBlind, setBigBlind] = useState(.20);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPeople().then(setPeople);
@@ -91,6 +93,37 @@ const Start = () => {
     }
   };
 
+  const handleBigBlind = async () => {
+    try {
+      const response = await fetch('/poker/bigBlind', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ bigBlind }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error setting big blind:', error);
+    }
+  };
+
+  const handlePlayPoker = async () => {
+    await handleBigBlind();
+    navigate('/poker');
+  };
+
+  const handleBlindChange = (e) => {
+    if (e.target.value < 0) {
+      setBigBlind(0)
+      alert("Please enter a positive number for Big Blind.");
+    } else {
+      setBigBlind(e.target.value)
+    }
+  };
+
   return (
     <div className="start">
       <h1>People</h1>
@@ -107,19 +140,27 @@ const Start = () => {
         handleDeletePerson={handleDeletePerson}
         editIndex={editIndex}
       />
-      <div className="button-container">
-        <Link to="/poker">
-          <button
-          className='button-poker'
+      <div className="poker-button-container">
+        <input
+          className="big-blind-input"
+          type="number"
+          name="Big Blind"
+          placeholder="Big Blind"
+          min="0"
+          step="0.2"
+          value={bigBlind}
+          onChange={handleBlindChange}
+        />
+        <button
+          className="button button-poker"
           disabled={editIndex !== null || people.length < 2}
-          >
-            Play Poker
-          </button>
-        </Link>
+          onClick={handlePlayPoker}
+        >
+          Play Poker
+        </button>
       </div>
     </div>
   );
 };
 
 export default Start;
-

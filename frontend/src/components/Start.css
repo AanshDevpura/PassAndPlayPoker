@@ -11,7 +11,7 @@
     text-align: center;
   }
   
-  button {
+  .button {
     padding: 10px 20px;
     border: none;
     border-radius: 5px;
@@ -35,8 +35,18 @@
     font-size: 20px;
   }
 
-  .button-container {
+  .poker-button-container {
     display: flex;
     justify-content: center;
     align-self: flex-start;
+  }
+
+  .big-blind-input {
+    width: 100px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: inherit;
+    margin-right: 10px;
   }

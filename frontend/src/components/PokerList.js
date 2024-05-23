@@ -1,13 +1,12 @@
 import React from 'react';
-import './NamesList.css';
 
-const NamesList = ({ people, handleEditPerson, handleDeletePerson, editIndex }) => {
+const PokerList = ({ people, handleEditPerson, handleDeletePerson, editIndex }) => {
   return (
-    <ul className="names-list">
+    <ul>
       {people.map((person) => (
-        <li className="names-list-item" key={person._id}>
+        <li key={person._id}>
           <span className="name-and-dollars">{person.name}</span>
-          <span className="name-and-dollars">${person.dollars}</span>
+          <span className="name-and-dollars"> ${person.dollars}</span>
           <div className="button-container">
             <button
               className="button button-update"
@@ -30,4 +29,4 @@ const NamesList = ({ people, handleEditPerson, handleDeletePerson, editIndex }) 
   );
 };
 
-export default NamesList;
+export default PokerList;

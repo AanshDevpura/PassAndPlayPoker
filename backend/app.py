@@ -4,11 +4,12 @@ import pymongo
 from pymongo import MongoClient
 from bson import ObjectId, errors
 import certifi
-
+import random
 # Connect to MongoDB cluster
 cluster = MongoClient("mongodb+srv://adevpura05:Devpura1@cluster0.yzk2hoy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", tlsCAFile=certifi.where())
 db = cluster["cluster0"]
 people_collection = db["people"]
+board_collection = db["board"]
 
 app = Flask(__name__)
 CORS(app)
@@ -17,6 +18,7 @@ CORS(app)
 def clear_database():
     try:
         people_collection.delete_many({})
+        board_collection.delete_many({})
         print("Database cleared successfully")
     except Exception as e:
         print("Error clearing database:", str(e))
@@ -59,11 +61,95 @@ def delete_person(person_id):
     try:
         deleted_person = people_collection.find_one_and_delete({"_id": ObjectId(person_id)})
         if deleted_person:
-            return jsonify({"_id": str(person_id), "name": deleted_person.get("name"), "dollars": deleted_person.get("dollars")})
+            return jsonify({"_id": str(person_id), "name": deleted_person.get("name"), "dollars": deleted_person.get("dollars")}), 200
         else:
             return jsonify({"error": "Person not found"}), 404
     except errors.InvalidId:
         return jsonify({"error": "Invalid ObjectId"}), 400
+
+@app.route("/poker/bigBlind", methods=["POST"])
+def big_blind():
+    try:
+        big_blind_value = request.json.get("bigBlind")        
+        result = board_collection.update_one({}, {"$set": {"big_blind": big_blind_value}},upsert=True)
+        return jsonify("Big blind set"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+class Deck:
+    def __init__(self):
+        self.cards = [f'{rank}{suit}' for suit in 'shdc' for rank in '23456789TJQKA']
+        random.shuffle(self.cards)
+    def deal_card(self):
+        return self.cards.pop(0)
+
+
+# Deal 2 cards to each player and make board
+@app.route("/poker/deal", methods=["POST"])
+def deal():
+    try:
+        players = list(people_collection.find({"dollars": {"$gt": 0}}))
+        deck = Deck()
+        
+        for player in players:
+            cards = [deck.deal_card() for _ in range(2)]
+            people_collection.update_one({"_id": player["_id"]}, {"$set": {"hand": cards}})
+        
+        board_cards = [deck.deal_card() for _ in range(5)]
+        board_collection.update_one({}, {"$set": {"board": board_cards}},upsert=True)
+        return jsonify("Successful deal"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/people/cards/<string:person_id>", methods=["GET"])
+def get_player_cards():
+    try:
+        person = people_collection.find_one({"_id": ObjectId(person_id)})
+        if person:
+            return jsonify(person.get("hand", [])), 200
+        else:
+            return jsonify({"error": "Person not found"}), 404
+    except errors.InvalidId:
+        return jsonify({"error": "Invalid ObjectId"}), 400
+
+
+@app.route("/poker/flop", methods=["GET"])
+def get_flop():
+    try:
+        board = board_collection.find_one()
+        if board:
+            return jsonify(board.get("board", [])[:3]), 200
+        else:
+            return jsonify({"error": "Board not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/turn", methods=["GET"])
+def get_turn():
+    try:
+        board = board_collection.find_one()
+        if board:
+            return jsonify(board.get("board", [])[3:4]), 200
+        else:
+            return jsonify({"error": "Board not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/river", methods=["GET"])
+def get_river():
+    try:
+        board = board_collection.find_one()
+        if board:
+            return jsonify(board.get("board", [])[4:5]), 200
+        else:
+            return jsonify({"error": "Board not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)

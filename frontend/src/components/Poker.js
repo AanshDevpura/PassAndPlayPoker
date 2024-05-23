@@ -1,9 +1,10 @@
 import React from 'react';
+import {Link } from 'react-router-dom';
 
 function Poker() {
     const handleDeal = async () => {
         try {
-          const response = await fetch('/people/deal', {
+          const response = await fetch('poker/deal', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -18,9 +19,16 @@ function Poker() {
       };
     return (
         <div>
-            <h1>Poker</h1>
-            <button onClick={handleDeal}>Deal</button>
+          <h1>Poker</h1>
+          <button onClick={handleDeal}>Deal</button>
+          <Link to="/">
+            <button>
+              Edit Players
+            </button>
+          </Link>
+          <card-t cid="00"></card-t>
         </div>
+        
     );
 }
 

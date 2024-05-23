@@ -15,6 +15,7 @@ const NamesForm = ({ newPerson, setNewPerson, handleAddPerson, handleUpdatePerso
   return (
     <div className="input-button-container">
       <input
+        className='names-form-input'
         type="text"
         name="name"
         placeholder="Name"
@@ -22,6 +23,7 @@ const NamesForm = ({ newPerson, setNewPerson, handleAddPerson, handleUpdatePerso
         onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })}
       />
       <input
+        className='names-form-input'
         type="number"
         name="dollars"
         placeholder="Dollars"
@@ -31,11 +33,11 @@ const NamesForm = ({ newPerson, setNewPerson, handleAddPerson, handleUpdatePerso
         onChange={handleDollarsChange}
       />
       {editIndex !== null ? (
-        <button className="button-update" onClick={handleUpdatePerson}>
+        <button className="button button-update" onClick={handleUpdatePerson}>
           Update Person
         </button>
       ) : (
-        <button className="button-add" onClick={handleAddPerson}>
+        <button className="button button-add" onClick={handleAddPerson}>
           Add Person
         </button>
       )}
