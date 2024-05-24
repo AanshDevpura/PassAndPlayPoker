@@ -1,40 +1,71 @@
-  img {
-    width: 100px;
-  }
+img {
+  height: 100px;
+}
 
-  .board {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
+.board {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 
-  .table {
-    position: relative;
-    width: 1000px;
-    height: 750px;
-    margin: 100px auto;
-    background-color: green;
-    border-radius: 40px;
-  }
+.table {
+  position: relative;
+  margin: 100px auto;
+  background-color: green;
+  border-radius: 40px;
+}
 
-  .player-name {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%)
-  } 
+.outer-player-container {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  justify-content: center;
+}
 
-  .name-and-dollars {
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    width: 100%;
-    flex-grow: 1;
-    padding: 10px;
-    margin-right: 10px;
-    background-color: #f9f9f9;
-  }
+.player-info-container {
+  background-color: #e7e7e7;
+  border-radius: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 20px;
+  padding-top: 20px;
+}
+
+.poker-name {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  width: 100%;
+  flex-grow: 1;
+  padding: 10px;
+  background-color: #f9f9f9;
+  margin-right: 10px;
+}
+
+.dealer {
+  background-color: #ffffff;
+}
+
+.poker-dollars {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  width: 100%;
+  flex-grow: 1;
+  padding: 10px;
+  background-color: #00ff08;
+}
+
+.zero-dollars {
+  background-color: #ff0000;
+}
+
+.player-cards {
+  display: flex;
+}

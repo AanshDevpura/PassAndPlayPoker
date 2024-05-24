@@ -67,8 +67,8 @@ def delete_person(person_id):
     except errors.InvalidId:
         return jsonify({"error": "Invalid ObjectId"}), 400
 
-@app.route("/poker/bigBlind", methods=["POST"])
-def big_blind():
+@app.route("/poker/big_blind", methods=["POST"])
+def modify_big_blind():
     try:
         big_blind_value = request.json.get("bigBlind")        
         result = board_collection.update_one({}, {"$set": {"big_blind": big_blind_value}},upsert=True)
@@ -76,7 +76,16 @@ def big_blind():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+@app.route("/poker/big_blind", methods=["GET"])
+def get_big_blind():
+    try:
+        big_blind = board_collection.find_one()
+        if big_blind:
+            return jsonify(big_blind.get("big_blind", 0)), 200
+        else:
+            return jsonify({"error": "Big blind not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 class Deck:
     def __init__(self):
@@ -92,7 +101,7 @@ def deal():
     try:
         players = list(people_collection.find({"dollars": {"$gt": 0}}))
         deck = Deck()
-        
+        undeal()
         for player in players:
             cards = [deck.deal_card() for _ in range(2)]
             people_collection.update_one({"_id": player["_id"]}, {"$set": {"hand": cards}})
@@ -104,16 +113,15 @@ def deal():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/poker/cards/<string:person_id>", methods=["GET"])
-def get_player_cards():
+@app.route("/poker/undeal", methods=["DELETE"])
+def undeal():
     try:
-        person = people_collection.find_one({"_id": ObjectId(person_id)})
-        if person:
-            return jsonify(person.get("hand", [])), 200
-        else:
-            return jsonify({"error": "Person not found"}), 404
-    except errors.InvalidId:
-        return jsonify({"error": "Invalid ObjectId"}), 400
+        people_collection.update_many({}, {"$unset": {"hand": ""}})
+        board_collection.update_one({}, {"$unset": {"board": ""}})
+        return jsonify("Successful undeal"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 @app.route("/poker/board_cards", methods=["GET"])

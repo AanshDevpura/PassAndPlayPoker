@@ -6,8 +6,8 @@ const NamesList = ({ people, handleEditPerson, handleDeletePerson, editIndex }) 
     <ul className="names-list">
       {people.map((person) => (
         <li className="names-list-item" key={person._id}>
-          <span className="name-and-dollars">{person.name}</span>
-          <span className="name-and-dollars">${person.dollars}</span>
+          <span className="list-name-and-dollars">{person.name}</span>
+          <span className="list-name-and-dollars">${person.dollars}</span>
           <div className="button-container">
             <button
               className="button button-update"

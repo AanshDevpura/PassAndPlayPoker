@@ -2,19 +2,22 @@ import React, { useState, useEffect } from 'react';
 import './Start.css';
 import NamesList from './NamesList';
 import NamesForm from './NamesForm';
-import { fetchPeople } from './Api';
+import { fetchPeople, fetchBigBlind } from './Api';
 import { useNavigate } from 'react-router-dom';
 
-const Start = ({ people, setPeople }) => {
+const Start = ({ people, setPeople, bigBlind, setBigBlind}) => {
   const [newPerson, setNewPerson] = useState({ name: '', dollars: '' });
   const [editIndex, setEditIndex] = useState(null);
-  const [bigBlind, setBigBlind] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPeople(setPeople);
   }, [setPeople]);
 
+  useEffect(() => {
+    fetchBigBlind(setBigBlind);
+  }, [setBigBlind]);
+  
   const handleAddPerson = async () => {
     if (people.length >= 10) {
       alert('Cannot add more than 10 people');
@@ -22,6 +25,10 @@ const Start = ({ people, setPeople }) => {
     }
     if (newPerson.name.trim() === '' || newPerson.dollars.trim() === '') {
       alert('Name and dollar amount are required');
+      return;
+    }
+    if (people.some(person => person.name === newPerson.name)) {
+      alert('Name already exists');
       return;
     }
     try {
@@ -50,6 +57,10 @@ const Start = ({ people, setPeople }) => {
   const handleUpdatePerson = async () => {
     if (newPerson.name.trim() === '' || newPerson.dollars.trim() === '') {
       alert('Name and dollar amount are required');
+      return;
+    }
+    if (people.some(person => person.name === newPerson.name && person._id !== editIndex)) {
+      alert('Name already exists');
       return;
     }
     try {
@@ -87,7 +98,7 @@ const Start = ({ people, setPeople }) => {
 
   const handleBigBlind = async () => {
     try {
-      const response = await fetch('/poker/bigBlind', {
+      const response = await fetch('/poker/big_blind', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -145,7 +156,7 @@ const Start = ({ people, setPeople }) => {
         />
         <button
           className="button button-poker"
-          disabled={editIndex !== null || people.length < 2}
+          disabled={editIndex !== null || bigBlind === "" || people.length < 2}
           onClick={handlePlayPoker}
         >
           Play Poker
