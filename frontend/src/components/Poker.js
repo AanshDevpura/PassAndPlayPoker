@@ -129,7 +129,7 @@ function Poker({ people, setPeople }) {
             return (
               <div className="outer-player-container" style={{ top: playerPosition.y, left: playerPosition.x }} key={index}>
                 <div className="player-info-container">
-                  <span className="poker-name">{person.name}</span>
+                  <span className= "poker-name">{person.name}</span>
                   <span className={`poker-dollars ${person.dollars === 0 ? 'zero-dollars' : ''}`}>${person.dollars}</span>
                 </div>
                 

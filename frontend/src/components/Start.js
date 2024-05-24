@@ -129,7 +129,7 @@ const Start = ({ people, setPeople, bigBlind, setBigBlind}) => {
 
   return (
     <div className="start">
-      <h1>People</h1>
+      <h1>Buy (Back) In</h1>
       <NamesForm
         newPerson={newPerson}
         setNewPerson={setNewPerson}
