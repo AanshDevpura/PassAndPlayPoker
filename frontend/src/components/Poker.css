@@ -1,0 +1,40 @@
+  img {
+    width: 100px;
+  }
+
+  .board {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .table {
+    position: relative;
+    width: 1000px;
+    height: 750px;
+    margin: 100px auto;
+    background-color: green;
+    border-radius: 40px;
+  }
+
+  .player-name {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%)
+  } 
+
+  .name-and-dollars {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+    flex-grow: 1;
+    padding: 10px;
+    margin-right: 10px;
+    background-color: #f9f9f9;
+  }

@@ -104,7 +104,7 @@ def deal():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/people/cards/<string:person_id>", methods=["GET"])
+@app.route("/poker/cards/<string:person_id>", methods=["GET"])
 def get_player_cards():
     try:
         person = people_collection.find_one({"_id": ObjectId(person_id)})
@@ -116,39 +116,16 @@ def get_player_cards():
         return jsonify({"error": "Invalid ObjectId"}), 400
 
 
-@app.route("/poker/flop", methods=["GET"])
+@app.route("/poker/board_cards", methods=["GET"])
 def get_flop():
     try:
         board = board_collection.find_one()
         if board:
-            return jsonify(board.get("board", [])[:3]), 200
+            return jsonify(board.get("board", [])), 200
         else:
             return jsonify({"error": "Board not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@app.route("/poker/turn", methods=["GET"])
-def get_turn():
-    try:
-        board = board_collection.find_one()
-        if board:
-            return jsonify(board.get("board", [])[3:4]), 200
-        else:
-            return jsonify({"error": "Board not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/poker/river", methods=["GET"])
-def get_river():
-    try:
-        board = board_collection.find_one()
-        if board:
-            return jsonify(board.get("board", [])[4:5]), 200
-        else:
-            return jsonify({"error": "Board not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 
 
 if __name__ == "__main__":

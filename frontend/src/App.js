@@ -1,15 +1,22 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import Start from './components/Start';
 import Poker from './components/Poker';
+import { fetchPeople } from './components/Api';
 
 function App() {
+  const [people, setPeople] = useState([]);
+
+  useEffect(() => {
+    fetchPeople(setPeople);
+  }, []);
+
   return (
     <Router>
       <Routes>
-        <Route path='/' element={<Start />} />
-        <Route path='/poker' element={<Poker />} />
+        <Route path='/' element={<Start people={people} setPeople={setPeople} />} />
+        <Route path='/poker' element={<Poker people={people} setPeople={setPeople} />} />
       </Routes>
     </Router>
   );

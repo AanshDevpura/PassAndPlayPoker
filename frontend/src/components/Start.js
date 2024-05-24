@@ -3,18 +3,17 @@ import './Start.css';
 import NamesList from './NamesList';
 import NamesForm from './NamesForm';
 import { fetchPeople } from './Api';
-import {useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-const Start = () => {
-  const [people, setPeople] = useState([]);
+const Start = ({ people, setPeople }) => {
   const [newPerson, setNewPerson] = useState({ name: '', dollars: '' });
   const [editIndex, setEditIndex] = useState(null);
-  const [bigBlind, setBigBlind] = useState(.20);
+  const [bigBlind, setBigBlind] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchPeople().then(setPeople);
-  }, []);
+    fetchPeople(setPeople);
+  }, [setPeople]);
 
   const handleAddPerson = async () => {
     if (people.length >= 10) {
@@ -36,10 +35,8 @@ const Start = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      console.log('Person added:', data); // Debug log
-      setNewPerson({ ...newPerson, name: ''});
-      await fetchPeople().then(setPeople);
+      setNewPerson({ ...newPerson, name: '' });
+      fetchPeople(setPeople);
     } catch (error) {
       console.error('Error adding person:', error);
     }
@@ -51,7 +48,6 @@ const Start = () => {
   };
 
   const handleUpdatePerson = async () => {
-    console.log(newPerson.dollars)
     if (newPerson.name.trim() === '' || newPerson.dollars.trim() === '') {
       alert('Name and dollar amount are required');
       return;
@@ -67,11 +63,9 @@ const Start = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      console.log('Person updated:', data); // Debug log
       setNewPerson({ ...newPerson, name: '' });
       setEditIndex(null);
-      await fetchPeople().then(setPeople);
+      fetchPeople(setPeople);
     } catch (error) {
       console.error('Error updating person:', error);
     }
@@ -85,9 +79,7 @@ const Start = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      console.log('Person deleted:', data); // Debug log
-      await fetchPeople().then(setPeople);
+      fetchPeople(setPeople);
     } catch (error) {
       console.error('Error deleting person:', error);
     }
