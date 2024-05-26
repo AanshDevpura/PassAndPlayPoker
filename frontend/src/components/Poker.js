@@ -35,64 +35,32 @@ function Poker({ people, setPeople }) {
   const [specialPlayers, setSpecialPlayers] = useState([]);
 
   useEffect(() => {
-    handleUndeal()
+    handleUndeal();
   }, []);
 
-  const handleSpecialPlayers = () => {
-    const validPlayerCount = people.filter(person => person.dollars !== 0).length;
-    console.log(people)
-    console.log(validPlayerCount)
-    const newSpecialPlayers = [];
-    if (specialPlayers.length === 0) {
-      let firstPlayerIndex = 0;
-      while (people[firstPlayerIndex].dollars === 0) {
-        firstPlayerIndex = (firstPlayerIndex + 1) % people.length;
-      }
-      newSpecialPlayers.push(firstPlayerIndex);
-      if (validPlayerCount === 2) {
-        newSpecialPlayers.push(firstPlayerIndex);
-      } else {
-        let secondPlayerIndex = (firstPlayerIndex + 1) % people.length;
-        while (people[secondPlayerIndex].dollars === 0) {
-          secondPlayerIndex = (secondPlayerIndex + 1) % people.length;
-        }
-        newSpecialPlayers.push(secondPlayerIndex);
+  const handleSpecialPlayers = async () => {
+    try {
+      const response = await fetch('/poker/special_players', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      let thirdPlayerIndex = (newSpecialPlayers[1] + 1) % people.length;
-      while (people[thirdPlayerIndex].dollars === 0) {
-        thirdPlayerIndex = (thirdPlayerIndex + 1) % people.length;
-      }
-      newSpecialPlayers.push(thirdPlayerIndex);
-    } else {
-      let firstPlayerIndex = (specialPlayers[0] + 1) % people.length;
-      while (people[firstPlayerIndex].dollars === 0) {
-        firstPlayerIndex = (firstPlayerIndex + 1) % people.length;
-      }
-      newSpecialPlayers.push(firstPlayerIndex);
-
-      if (validPlayerCount === 2) {
-        newSpecialPlayers.push(firstPlayerIndex);
-      } else {
-        let secondPlayerIndex = (firstPlayerIndex + 1) % people.length;
-        while (people[secondPlayerIndex].dollars === 0) {
-          secondPlayerIndex = (secondPlayerIndex + 1) % people.length;
-        }
-        newSpecialPlayers.push(secondPlayerIndex);
-      }
-
-      let thirdPlayerIndex = (newSpecialPlayers[1] + 1) % people.length;
-      while (people[thirdPlayerIndex].dollars === 0) {
-        thirdPlayerIndex = (thirdPlayerIndex + 1) % people.length;
-      }
-      newSpecialPlayers.push(thirdPlayerIndex);
+      const data = await response.json();
+      setSpecialPlayers(data);
+    } catch (error) {
+      console.error('Error fetching special players:', error);
     }
-    setSpecialPlayers(newSpecialPlayers);
   };
 
   const handleDeal = async () => {
     try {
-      const response = await fetch('poker/deal', {
+      const response = await fetch('/poker/deal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,8 +72,8 @@ function Poker({ people, setPeople }) {
       }
 
       await fetchBoardCards();
-      await fetchPeople(setPeople)
-      handleSpecialPlayers();
+      await fetchPeople(setPeople);
+      await handleSpecialPlayers();
       setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error dealing:', error);
@@ -114,7 +82,7 @@ function Poker({ people, setPeople }) {
 
   const handleUndeal = async () => {
     try {
-      const response = await fetch('poker/undeal', {
+      const response = await fetch('/poker/undeal', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +106,7 @@ function Poker({ people, setPeople }) {
 
   const fetchBoardCards = async () => {
     try {
-      const response = await fetch('poker/board_cards', {
+      const response = await fetch('/poker/board_cards', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -179,9 +147,9 @@ function Poker({ people, setPeople }) {
             return (
               <div className="outer-player-container" style={{ top: playerPosition.y, left: playerPosition.x }} key={index}>
                 <div className="player-info-container">
-                {index === specialPlayers[0] && <span className="poker-d">D</span>}
-                {index === specialPlayers[1] && <span className="poker-sb">SB</span>}
-                {index === specialPlayers[2] && <span className="poker-bb">BB</span>}
+                  {index === specialPlayers[0] && <span className="poker-d">D</span>}
+                  {index === specialPlayers[1] && <span className="poker-sb">SB</span>}
+                  {index === specialPlayers[2] && <span className="poker-bb">BB</span>}
                   <span className="poker-name">{person.name}</span>
                   <span className={`poker-dollars ${person.dollars === 0 ? 'zero-dollars' : ''}`}>${person.dollars}</span>
                 </div>
@@ -240,7 +208,7 @@ function Poker({ people, setPeople }) {
         </div>
       )}
     </div>
-  );  
+  );
 }
 
 export default Poker;

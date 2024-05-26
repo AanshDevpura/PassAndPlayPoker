@@ -18,6 +18,7 @@ const Start = ({ people, setPeople, bigBlind, setBigBlind}) => {
     fetchBigBlind(setBigBlind);
   }, [setBigBlind]);
   
+  
   const handleAddPerson = async () => {
     if (people.length >= 10) {
       alert('Cannot add more than 10 people');

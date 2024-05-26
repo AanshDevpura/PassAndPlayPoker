@@ -5,8 +5,12 @@ from pymongo import MongoClient
 from bson import ObjectId, errors
 import certifi
 import random
+
 # Connect to MongoDB cluster
-cluster = MongoClient("mongodb+srv://adevpura05:Devpura1@cluster0.yzk2hoy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", tlsCAFile=certifi.where())
+cluster = MongoClient(
+    "mongodb+srv://adevpura05:Devpura1@cluster0.yzk2hoy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    tlsCAFile=certifi.where()
+)
 db = cluster["cluster0"]
 people_collection = db["people"]
 board_collection = db["board"]
@@ -22,6 +26,7 @@ def clear_database():
         print("Database cleared successfully")
     except Exception as e:
         print("Error clearing database:", str(e))
+
 clear_database()
 
 # Get all people
@@ -59,6 +64,17 @@ def modify_person(person_id):
 @app.route("/people/<string:person_id>", methods=["DELETE"])
 def delete_person(person_id):
     try:
+        # if the person was before the dealer or was the dealer, decrement the dealer
+        board = board_collection.find_one()
+        if board:
+            dealer = board.get("dealer", -1)
+            people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
+            people_ids = [str(person["_id"]) for person in people]
+            print(people_ids)
+            print(dealer)
+            if dealer >= people_ids.index(person_id):
+                board_collection.update_one({}, {"$inc": {"dealer": -1}})
+
         deleted_person = people_collection.find_one_and_delete({"_id": ObjectId(person_id)})
         if deleted_person:
             return jsonify({"_id": str(person_id), "name": deleted_person.get("name"), "dollars": deleted_person.get("dollars")}), 200
@@ -67,11 +83,27 @@ def delete_person(person_id):
     except errors.InvalidId:
         return jsonify({"error": "Invalid ObjectId"}), 400
 
+# swap two people
+@app.route("/people/reorder/<string:person_id1>/<string:person_id2>", methods=["POST"])
+def reorder_person(person_id1, person_id2):
+    try:
+        person1 = people_collection.find_one({"_id": ObjectId(person_id1)})
+        person2 = people_collection.find_one({"_id": ObjectId(person_id2)})
+        if person1 and person2:
+            people_collection.update_one({"_id": ObjectId(person_id1)}, {"$set": person2})
+            people_collection.update_one({"_id": ObjectId(person_id2)}, {"$set": person1})
+            return jsonify("People reordered"), 200
+        else:
+            return jsonify({"error": "Person not found"}), 404
+    except errors.InvalidId:
+        return jsonify({"error": "Invalid ObjectId"}), 400
+
+
 @app.route("/poker/big_blind", methods=["POST"])
 def modify_big_blind():
     try:
         big_blind_value = request.json.get("bigBlind")        
-        result = board_collection.update_one({}, {"$set": {"big_blind": big_blind_value}},upsert=True)
+        result = board_collection.update_one({}, {"$set": {"big_blind": big_blind_value}}, upsert=True)
         return jsonify("Big blind set"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -94,7 +126,6 @@ class Deck:
     def deal_card(self):
         return self.cards.pop(0)
 
-
 # Deal 2 cards to each player and make board
 @app.route("/poker/deal", methods=["POST"])
 def deal():
@@ -107,11 +138,10 @@ def deal():
             people_collection.update_one({"_id": player["_id"]}, {"$set": {"hand": cards}})
         
         board_cards = [deck.deal_card() for _ in range(5)]
-        board_collection.update_one({}, {"$set": {"board": board_cards}},upsert=True)
+        board_collection.update_one({}, {"$set": {"board": board_cards}}, upsert=True)
         return jsonify("Successful deal"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route("/poker/undeal", methods=["DELETE"])
 def undeal():
@@ -121,8 +151,6 @@ def undeal():
         return jsonify("Successful undeal"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
 
 @app.route("/poker/board_cards", methods=["GET"])
 def get_flop():
@@ -140,6 +168,36 @@ def fold(person_id):
     try:
         people_collection.update_one({"_id": ObjectId(person_id)}, {"$unset": {"hand": ""}})
         return jsonify("Successful fold"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/special_players/", methods=["GET"])
+def get_special_players():
+    try:
+        people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
+        valid_players = [person for person in people if person["dollars"] > 0]
+
+        if not valid_players or len(valid_players) == 1:
+            board_collection.update_one({}, {"$unset": {"dealer": ""}})
+            return jsonify([]), 200
+        
+        dealer = (board_collection.find_one().get("dealer", -1) + 1) % len(people)
+        while people[dealer]["dollars"] == 0:
+            dealer = (dealer + 1) % len(people)
+        board_collection.update_one({}, {"$set": {"dealer": dealer}})
+
+        if len(valid_players) == 2:
+            small_blind = dealer
+        else:
+            small_blind = (dealer + 1) % len(people)
+            while people[small_blind]["dollars"] == 0:
+                small_blind = (small_blind + 1) % len(people)
+
+        big_blind = (small_blind + 1) % len(people)
+        while people[big_blind]["dollars"] == 0:
+            big_blind = (big_blind + 1) % len(people)
+        
+        return jsonify([dealer, small_blind, big_blind]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
