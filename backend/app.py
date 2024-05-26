@@ -135,6 +135,13 @@ def get_flop():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/poker/fold/<string:person_id>", methods=["DELETE"])
+def fold(person_id):
+    try:
+        people_collection.update_one({"_id": ObjectId(person_id)}, {"$unset": {"hand": ""}})
+        return jsonify("Successful fold"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

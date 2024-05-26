@@ -49,9 +49,34 @@ img {
   margin-right: 10px;
 }
 
-.dealer {
+.poker-d {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  width: 100%;
+  flex-grow: 1;
+  padding: 10px;
   background-color: #ffffff;
+  margin-right: 10px;
 }
+
+.poker-sb {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  width: 100%;
+  flex-grow: 1;
+  padding: 10px;
+  background-color: #ffff00;
+  margin-right: 10px;
+}
+.poker-bb {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+    flex-grow: 1;
+    padding: 10px;
+    background-color: #00ccff;
+    margin-right: 10px;
+  }
 
 .poker-dollars {
   border: 1px solid #ddd;

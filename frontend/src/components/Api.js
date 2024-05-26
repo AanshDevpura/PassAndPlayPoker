@@ -6,7 +6,6 @@ export const fetchPeople = async (setPeople) => {
     }
     const data = await response.json();
     setPeople(data);
-    console.log(data);
     return data;
   } catch (error) {
     console.error('Error fetching people:', error);
