@@ -38,6 +38,23 @@ function Poker({ people, setPeople }) {
     handleUndeal();
   }, []);
 
+  const handleFold = async (personId) => {
+    try {
+      const response = await fetch(`/poker/fold/${personId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      await fetchPeople(setPeople);
+    } catch (error) {
+      console.error('Error folding:', error);
+    }
+  };
+
   const handleSpecialPlayers = async () => {
     try {
       const response = await fetch('/poker/special_players', {
@@ -131,7 +148,6 @@ function Poker({ people, setPeople }) {
       return newShowHands;
     });
   };
-
   return (
     <div>
       <button onClick={handleDeal}>Deal</button>
@@ -155,18 +171,23 @@ function Poker({ people, setPeople }) {
                 </div>
 
                 {person.hand && (
-                  <div className="player-cards" onClick={() => toggleShowHand(index)}>
-                    {showHands[index] ? (
-                      <>
-                        <card-t cid={person.hand[0]}></card-t>
-                        <card-t cid={person.hand[1]}></card-t>
-                      </>
-                    ) : (
-                      <>
-                        <card-t cid="00"></card-t>
-                        <card-t cid="00"></card-t>
-                      </>
-                    )}
+                  <div>
+                    <div className="player-cards" onClick={() => toggleShowHand(index)}>
+                      {showHands[index] ? (
+                        <div>
+                          <card-t cid={person.hand[0]}></card-t>
+                          <card-t cid={person.hand[1]}></card-t>
+                        </div>
+                      ) : (
+                        <div>
+                          <card-t cid="00"></card-t>
+                          <card-t cid="00"></card-t>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <button onClick={() => handleFold(person._id)}>Fold</button>
+                    </div>
                   </div>
                 )}
               </div>

@@ -83,22 +83,6 @@ def delete_person(person_id):
     except errors.InvalidId:
         return jsonify({"error": "Invalid ObjectId"}), 400
 
-# swap two people
-@app.route("/people/reorder/<string:person_id1>/<string:person_id2>", methods=["POST"])
-def reorder_person(person_id1, person_id2):
-    try:
-        person1 = people_collection.find_one({"_id": ObjectId(person_id1)})
-        person2 = people_collection.find_one({"_id": ObjectId(person_id2)})
-        if person1 and person2:
-            people_collection.update_one({"_id": ObjectId(person_id1)}, {"$set": person2})
-            people_collection.update_one({"_id": ObjectId(person_id2)}, {"$set": person1})
-            return jsonify("People reordered"), 200
-        else:
-            return jsonify({"error": "Person not found"}), 404
-    except errors.InvalidId:
-        return jsonify({"error": "Invalid ObjectId"}), 400
-
-
 @app.route("/poker/big_blind", methods=["POST"])
 def modify_big_blind():
     try:
@@ -163,7 +147,7 @@ def get_flop():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/fold/<string:person_id>", methods=["DELETE"])
+@app.route("/poker/fold/<string:person_id>", methods=["POST"])
 def fold(person_id):
     try:
         people_collection.update_one({"_id": ObjectId(person_id)}, {"$unset": {"hand": ""}})
@@ -176,7 +160,7 @@ def get_special_players():
     try:
         people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
         valid_players = [person for person in people if person["dollars"] > 0]
-
+        valid_players_count = len(valid_players)
         if not valid_players or len(valid_players) == 1:
             board_collection.update_one({}, {"$unset": {"dealer": ""}})
             return jsonify([]), 200
@@ -186,7 +170,7 @@ def get_special_players():
             dealer = (dealer + 1) % len(people)
         board_collection.update_one({}, {"$set": {"dealer": dealer}})
 
-        if len(valid_players) == 2:
+        if valid_players_count == 2:
             small_blind = dealer
         else:
             small_blind = (dealer + 1) % len(people)
@@ -197,7 +181,13 @@ def get_special_players():
         while people[big_blind]["dollars"] == 0:
             big_blind = (big_blind + 1) % len(people)
         
-        return jsonify([dealer, small_blind, big_blind]), 200
+        pre_flop_leader = (big_blind + 1) % len(people)
+        while people[pre_flop_leader]["dollars"] == 0:
+            pre_flop_leader = (pre_flop_leader + 1) % len(people)
+        
+        post_flop_leader = big_blind if valid_players_count == 2 else small_blind
+
+        return jsonify([dealer, small_blind, big_blind, pre_flop_leader, post_flop_leader]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
