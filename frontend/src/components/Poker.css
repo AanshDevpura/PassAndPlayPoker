@@ -1,5 +1,5 @@
 img {
-  height: 100px;
+  height: 10vh;
 }
 
 .board {
@@ -17,20 +17,22 @@ img {
   margin: 100px auto;
   background-color: green;
   border-radius: 40px;
+  width: calc(100vw - 300px); /* Ensure it fits within the viewport */
+  height: calc(100vh - 200px); /* Ensure it fits within the viewport */
 }
 
 .outer-player-container {
   display: flex;
   flex-direction: column;
   position: absolute;
-  top: 50%;
-  left: 50%;
   transform: translate(-50%, -50%);
   align-items: center;
   justify-content: center;
 }
 
 .player-info-container {
+  max-width: 280px;
+  overflow: auto;
   background-color: #e7e7e7;
   border-radius: 5px;
   padding-left: 10px;
@@ -89,8 +91,4 @@ img {
 
 .zero-dollars {
   background-color: #ff0000;
-}
-
-.player-cards {
-  display: flex;
 }

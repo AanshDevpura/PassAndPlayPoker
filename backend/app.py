@@ -123,6 +123,7 @@ def deal():
         
         board_cards = [deck.deal_card() for _ in range(5)]
         board_collection.update_one({}, {"$set": {"board": board_cards}}, upsert=True)
+        board_collection.update_one({}, {"$set": {"game_state": 0}}, upsert=True)
         return jsonify("Successful deal"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -155,7 +156,7 @@ def fold(person_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/special_players/", methods=["GET"])
+@app.route("/poker/special_players", methods=["GET"])
 def get_special_players():
     try:
         people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
@@ -184,12 +185,30 @@ def get_special_players():
         pre_flop_leader = (big_blind + 1) % len(people)
         while people[pre_flop_leader]["dollars"] == 0:
             pre_flop_leader = (pre_flop_leader + 1) % len(people)
-        
+        board_collection.update_one({}, {"$set": {"current_leader": pre_flop_leader}})
+        board_collection.update_one({}, {"$set": {"current": pre_flop_leader}})
         post_flop_leader = big_blind if valid_players_count == 2 else small_blind
-
-        return jsonify([dealer, small_blind, big_blind, pre_flop_leader, post_flop_leader]), 200
+        board_collection.update_one({}, {"$set": {"post_flop_leader": post_flop_leader}})
+        return jsonify([dealer, small_blind, big_blind]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/game_state", methods=["GET"])
+def get_game_state():
+    try:
+        game_state = board_collection.find_one().get("game_state", -1)
+        return jsonify(game_state), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/game_state", methods=["POST"])
+def increment_game_state():
+    try:
+        board_collection.update_one({}, {"$inc": {"game_state": 1}})
+        return jsonify("Game state incremented"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)

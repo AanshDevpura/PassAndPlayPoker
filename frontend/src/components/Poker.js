@@ -6,6 +6,7 @@ import './Poker.css';
 function getPlayerPosition(index, totalPlayers) {
   const width = window.innerWidth - 300;
   const height = window.innerHeight - 200;
+  console.log(window.innerHeight)
   const perimeter = width * 2 + height * 2;
   let x = width / 2 + (perimeter * index) / totalPlayers;
   let y = 0;
@@ -37,6 +38,41 @@ function Poker({ people, setPeople }) {
   useEffect(() => {
     handleUndeal();
   }, []);
+  const fetchGameState = async () => {
+    try {
+      const response = await fetch('/poker/game_state', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setGameState(data);
+    } catch (error) {
+      console.error('Error fetching game state:', error);
+    }
+  }
+  
+  const updateGameState = async () => {
+    try {
+      const response = await fetch('/poker/game_state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      fetchGameState();
+    } catch (error) {
+      console.error('Error updating game stat:', error);
+    }
+  }
+
 
   const handleFold = async (personId) => {
     try {
@@ -67,7 +103,6 @@ function Poker({ people, setPeople }) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
       setSpecialPlayers(data);
     } catch (error) {
@@ -87,10 +122,10 @@ function Poker({ people, setPeople }) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       await fetchBoardCards();
       await fetchPeople(setPeople);
       await handleSpecialPlayers();
+      await fetchGameState();
       setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error dealing:', error);
@@ -111,15 +146,11 @@ function Poker({ people, setPeople }) {
       }
       await fetchBoardCards();
       await fetchPeople(setPeople);
-      setGameState(0);
     } catch (error) {
       console.error('Error undealing:', error);
     }
   };
 
-  const updateGameState = async () => {
-    setGameState(prev => prev + 1);
-  };
 
   const fetchBoardCards = async () => {
     try {
@@ -156,8 +187,8 @@ function Poker({ people, setPeople }) {
       <Link to="/">
         <button>Edit Players</button>
       </Link>
-      <div className="table" style={{ width: window.innerWidth - 300, height: window.innerHeight - 200 }}>
-        <div className="player-info">
+      <div className="table">
+        <div className="players">
           {people.map((person, index) => {
             const playerPosition = getPlayerPosition(index, people.length);
             return (
