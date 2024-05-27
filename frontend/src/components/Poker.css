@@ -1,5 +1,5 @@
 img {
-  height: 10vh;
+  width: 4vw;
 }
 
 .board {
@@ -17,8 +17,8 @@ img {
   margin: 100px auto;
   background-color: green;
   border-radius: 40px;
-  width: calc(100vw - 300px); /* Ensure it fits within the viewport */
-  height: calc(100vh - 200px); /* Ensure it fits within the viewport */
+  width: calc(100vw - 300px);
+  height: calc(100vh - 200px);
 }
 
 .outer-player-container {
@@ -28,6 +28,7 @@ img {
   transform: translate(-50%, -50%);
   align-items: center;
   justify-content: center;
+  min-width: 8vw;
 }
 
 .player-info-container {
@@ -91,4 +92,11 @@ img {
 
 .zero-dollars {
   background-color: #ff0000;
+}
+
+.player-cards
+{
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

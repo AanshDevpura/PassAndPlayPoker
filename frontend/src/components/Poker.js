@@ -34,6 +34,9 @@ function Poker({ people, setPeople }) {
   const [showHands, setShowHands] = useState([]);
   const [specialPlayers, setSpecialPlayers] = useState([]);
   const [current, setCurrent] = useState(0);
+  const [currentLeader, setCurrentLeader] = useState(0);
+  const [totalBet, setTotalBet] = useState(0);
+  const [pot, setPot] = useState(0);
 
   useEffect(() => {
     handleUndeal();
@@ -56,6 +59,62 @@ function Poker({ people, setPeople }) {
     }
   }
 
+  const fetchCurrentLeader = async () => {
+    try {
+      const response = await fetch('/poker/current_leader', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setCurrentLeader(data);
+    } catch (error) {
+      console.error('Error fetching current leader:', error);
+    }
+  }
+
+  const fetchPot = async () => {
+    try {
+      const response = await fetch('/poker/pot', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setPot(data);
+    } catch (error) {
+      console.error('Error fetching pot:', error);
+    }
+  }
+
+  const fetchTotalBet = async () => {
+    try {
+      const response = await fetch('/poker/total_bet', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setTotalBet(data);
+    } catch (error) {
+      console.error('Error fetching total bet:', error);
+    }
+  }
+
+
+
   const updateCurrent = async () => {
     try {
       const response = await fetch('/poker/current', {
@@ -67,12 +126,61 @@ function Poker({ people, setPeople }) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      fetchCurrent();
-      fetchGameState();
+      await fetchCurrent();
+      await fetchGameState();
+      await fetchCurrentLeader();
+      setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error updating current:', error);
     }
   }
+
+  const handleRaise = async (personId, amount) => {
+    try {
+      const response = await fetch(`/poker/raise/${personId}/${amount}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      await fetchPeople(setPeople);
+      await fetchPot();
+      await fetchTotalBet();
+      await fetchCurrent();
+      await fetchGameState();
+      await fetchCurrentLeader();
+      setShowHands(new Array(people.length).fill(false));
+    } catch (error) {
+      console.error('Error raising:', error);
+    }
+  };
+
+  const handleCall = async (personId) => {
+    try {
+      const response = await fetch(`/poker/call/${personId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      await fetchPeople(setPeople);
+      await fetchPot();
+      await fetchTotalBet();
+      await fetchCurrent();
+      await fetchGameState();
+      await fetchCurrentLeader();
+      setShowHands(new Array(people.length).fill(false));
+    } catch (error) {
+      console.error('Error calling:', error);
+    }
+  };
+
 
   const fetchGameState = async () => {
     try {
@@ -104,6 +212,10 @@ function Poker({ people, setPeople }) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       await fetchPeople(setPeople);
+      await fetchCurrent();
+      await fetchGameState();
+      await fetchCurrentLeader();
+      setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error folding:', error);
     }
@@ -145,6 +257,7 @@ function Poker({ people, setPeople }) {
       await handleSpecialPlayers();
       await fetchGameState();
       await fetchCurrent();
+      await fetchCurrentLeader();
       setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error dealing:', error);
@@ -205,10 +318,12 @@ function Poker({ people, setPeople }) {
     <div>
       <button onClick={handleDeal}>Deal</button>
       <button onClick={handleUndeal}>Undeal</button>
-      <button onClick={updateCurrent}>Next State</button>
       <div>
         <span>Current: {current}</span>
+        <span>Current Leader: {currentLeader}</span>
         <span>Game State: {gameState}</span>
+        <span>Total Bet: {totalBet}</span>
+        <span>Pot: {pot}</span>
       </div>
       <Link to="/">
         <button>Edit Players</button>
@@ -242,9 +357,12 @@ function Poker({ people, setPeople }) {
                         </div>
                       )}
                     </div>
-                    <div>
-                      {index == current && <button onClick={() => handleFold(person._id)}>Fold</button>}
-                    </div>
+
+                    {index === current &&<div>
+                      <button onClick={() => handleFold(person._id)}>Fold</button>
+                      <button onClick={() => handleCall(person._id)}>Check/Call</button>
+                      <button onClick={() => handleRaise(person._id, 10)}>Raise</button>
+                    </div>}
                   </div>
                 )}
               </div>

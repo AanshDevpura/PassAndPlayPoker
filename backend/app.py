@@ -70,8 +70,6 @@ def delete_person(person_id):
             dealer = board.get("dealer", -1)
             people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
             people_ids = [str(person["_id"]) for person in people]
-            print(people_ids)
-            print(dealer)
             if dealer >= people_ids.index(person_id):
                 board_collection.update_one({}, {"$inc": {"dealer": -1}})
 
@@ -124,6 +122,8 @@ def deal():
         board_cards = [deck.deal_card() for _ in range(5)]
         board_collection.update_one({}, {"$set": {"board": board_cards}}, upsert=True)
         board_collection.update_one({}, {"$set": {"game_state": 0}}, upsert=True)
+        board_collection.update_one({}, {"$set": {"pot": 0}}, upsert=True)
+        board_collection.update_one({}, {"$set": {"round_bet": 0}}, upsert=True)
         return jsonify("Successful deal"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -132,10 +132,13 @@ def deal():
 def undeal():
     try:
         people_collection.update_many({}, {"$unset": {"hand": ""}})
+        people_collection.update_many({}, {"$unset": {"betted": ""}})
         board_collection.update_one({}, {"$unset": {"board": ""}})
         board_collection.update_one({}, {"$unset": {"current_leader": ""}})
         board_collection.update_one({}, {"$unset": {"current": ""}})
         board_collection.update_one({}, {"$unset": {"post_flop_leader": ""}})
+        board_collection.update_one({}, {"$unset": {"pot": ""}})
+        board_collection.update_one({}, {"$unset": {"round_bet": ""}})
         return jsonify("Successful undeal"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -155,6 +158,7 @@ def get_flop():
 def fold(person_id):
     try:
         people_collection.update_one({"_id": ObjectId(person_id)}, {"$unset": {"hand": ""}})
+        increment_current()
         return jsonify("Successful fold"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -215,22 +219,83 @@ def increment_game_state():
 @app.route("/poker/current", methods=["POST"])
 def increment_current():
     try:
-        current = board_collection.find_one().get("current", -1)
         people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
         valid_players = [person for person in people if person["dollars"] > 0 and "hand" in person]
         if not valid_players or len(valid_players) == 1:
             board_collection.update_one({}, {"$set": {"game_state": 4}})
             return jsonify("Game over"), 200
-        current = (current + 1) % len(people)
-        while people[current]["dollars"] == 0 or "hand" not in people[current]:
+        current = board_collection.find_one().get("current", -1)
+        current_leader = board_collection.find_one().get("current_leader", -1)
+        next_round = False
+        while True:
             current = (current + 1) % len(people)
-        #fix this
-        if(current == board_collection.find_one().get("current_leader", -1)):
-            increment_game_state()
-            current = board_collection.find_one().get("post_flop_leader", -1)
+            if(current_leader == current):
+                increment_game_state()
+                current = board_collection.find_one().get("post_flop_leader", -1)
+                next_round = True
+            if not(people[current]["dollars"] == 0 or "hand" not in people[current]):
+                break
+        if next_round:
             board_collection.update_one({}, {"$set": {"current_leader": current}})
         board_collection.update_one({}, {"$set": {"current": current}})
         return jsonify("Current incremented"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+#implement raising
+@app.route("/poker/raise/<string:person_id>/<int:amount>", methods=["POST"])
+def raise_dollars(person_id, amount):
+    try:
+        person = people_collection.find_one({"_id": ObjectId(person_id)})
+        if person:
+            amount += board_collection.find_one().get("round_bet", 0) - person.get("betted", 0)
+            amount = min(amount, person["dollars"])
+            people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"dollars": -amount}})
+            people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"betted": amount}})
+            board_collection.update_one({}, {"$inc": {"pot": amount}})
+            current = board_collection.find_one().get("current", -1)
+            board_collection.update_one({}, {"$set": {"current_leader": current}})
+            total_bet = person.get("betted", 0) + amount
+            board_collection.update_one({}, {"$set": {"round_bet": total_bet}})
+            increment_current()
+            return jsonify(amount), 200
+        else:
+            return jsonify({"error": "Person not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+#this should work for poker checking
+@app.route("/poker/call/<string:person_id>", methods=["POST"])
+def call(person_id):
+    try:
+        person = people_collection.find_one({"_id": ObjectId(person_id)})
+        if person:
+            round_bet = board_collection.find_one().get("round_bet", 0)
+            amount = round_bet - person.get("betted", 0)
+            amount = min(amount, person["dollars"])
+            people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"dollars": -amount}})
+            people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"betted": amount}})
+            board_collection.update_one({}, {"$inc": {"pot": amount}})
+            increment_current()
+            return jsonify(amount), 200
+        else:
+            return jsonify({"error": "Person not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/pot", methods=["GET"])
+def get_pot():
+    try:
+        pot = board_collection.find_one().get("pot", -1)
+        return jsonify(pot), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/round_bet", methods=["GET"])
+def get_round_bet():
+    try:
+        round_bet = board_collection.find_one().get("round_bet", -1)
+        return jsonify(round_bet), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -242,6 +307,13 @@ def get_current():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/poker/current_leader", methods=["GET"])
+def get_current_leader():
+    try:
+        current_leader = board_collection.find_one().get("current_leader", -1)
+        return jsonify(current_leader), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
