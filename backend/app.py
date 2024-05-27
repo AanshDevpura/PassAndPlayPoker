@@ -159,7 +159,7 @@ def fold(person_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/special_players", methods=["GET"])
+@app.route("/poker/special_people", methods=["GET"])
 def get_special_players():
     try:
         people = list(people_collection.find().sort("_id", pymongo.ASCENDING))

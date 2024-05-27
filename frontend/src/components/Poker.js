@@ -6,7 +6,6 @@ import './Poker.css';
 function getPlayerPosition(index, totalPlayers) {
   const width = window.innerWidth - 300;
   const height = window.innerHeight - 200;
-  console.log(window.innerHeight)
   const perimeter = width * 2 + height * 2;
   let x = width / 2 + (perimeter * index) / totalPlayers;
   let y = 0;
@@ -75,8 +74,6 @@ function Poker({ people, setPeople }) {
     }
   }
 
-
-
   const fetchGameState = async () => {
     try {
       const response = await fetch('/poker/game_state', {
@@ -114,7 +111,7 @@ function Poker({ people, setPeople }) {
 
   const handleSpecialPlayers = async () => {
     try {
-      const response = await fetch('/poker/special_players', {
+      const response = await fetch('/poker/special_people', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -147,6 +144,7 @@ function Poker({ people, setPeople }) {
       await fetchPeople(setPeople);
       await handleSpecialPlayers();
       await fetchGameState();
+      await fetchCurrent();
       setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error dealing:', error);
@@ -166,6 +164,7 @@ function Poker({ people, setPeople }) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       await fetchBoardCards();
+      await fetchCurrent();
       await fetchPeople(setPeople);
     } catch (error) {
       console.error('Error undealing:', error);
@@ -194,11 +193,13 @@ function Poker({ people, setPeople }) {
   };
 
   const toggleShowHand = (index) => {
-    setShowHands(prev => {
-      const newShowHands = [...prev];
-      newShowHands[index] = !newShowHands[index];
-      return newShowHands;
-    });
+    if (index === current) {
+      setShowHands(prev => {
+        const newShowHands = [...prev];
+        newShowHands[index] = !newShowHands[index];
+        return newShowHands;
+      });
+    }
   };
   return (
     <div>
@@ -242,7 +243,7 @@ function Poker({ people, setPeople }) {
                       )}
                     </div>
                     <div>
-                      <button onClick={() => handleFold(person._id)}>Fold</button>
+                      {index == current && <button onClick={() => handleFold(person._id)}>Fold</button>}
                     </div>
                   </div>
                 )}
