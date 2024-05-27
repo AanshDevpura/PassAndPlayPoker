@@ -217,10 +217,14 @@ def increment_current():
     try:
         current = board_collection.find_one().get("current", -1)
         people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
-        valid_players = [person for person in people if person["dollars"] > 0]
+        valid_players = [person for person in people if person["dollars"] > 0 and "hand" in person]
+        if not valid_players or len(valid_players) == 1:
+            board_collection.update_one({}, {"$set": {"game_state": 4}})
+            return jsonify("Game over"), 200
         current = (current + 1) % len(people)
-        while people[current]["dollars"] == 0:
+        while people[current]["dollars"] == 0 or "hand" not in people[current]:
             current = (current + 1) % len(people)
+        #fix this
         if(current == board_collection.find_one().get("current_leader", -1)):
             increment_game_state()
             current = board_collection.find_one().get("post_flop_leader", -1)
