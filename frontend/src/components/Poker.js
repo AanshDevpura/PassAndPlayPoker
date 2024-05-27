@@ -34,10 +34,49 @@ function Poker({ people, setPeople }) {
   const [gameState, setGameState] = useState(0);
   const [showHands, setShowHands] = useState([]);
   const [specialPlayers, setSpecialPlayers] = useState([]);
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     handleUndeal();
   }, []);
+  const fetchCurrent = async () => {
+    try {
+      const response = await fetch('/poker/current', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setCurrent(data);
+    } catch (error) {
+      console.error('Error fetching current:', error);
+    }
+  }
+
+  const updateCurrent = async () => {
+    try {
+      const response = await fetch('/poker/current', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      fetchCurrent();
+      fetchGameState();
+    } catch (error) {
+      console.error('Error updating current:', error);
+    }
+  }
+
+
+
   const fetchGameState = async () => {
     try {
       const response = await fetch('/poker/game_state', {
@@ -55,24 +94,6 @@ function Poker({ people, setPeople }) {
       console.error('Error fetching game state:', error);
     }
   }
-  
-  const updateGameState = async () => {
-    try {
-      const response = await fetch('/poker/game_state', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      fetchGameState();
-    } catch (error) {
-      console.error('Error updating game stat:', error);
-    }
-  }
-
 
   const handleFold = async (personId) => {
     try {
@@ -183,7 +204,11 @@ function Poker({ people, setPeople }) {
     <div>
       <button onClick={handleDeal}>Deal</button>
       <button onClick={handleUndeal}>Undeal</button>
-      <button onClick={updateGameState}>Next State</button>
+      <button onClick={updateCurrent}>Next State</button>
+      <div>
+        <span>Current: {current}</span>
+        <span>Game State: {gameState}</span>
+      </div>
       <Link to="/">
         <button>Edit Players</button>
       </Link>

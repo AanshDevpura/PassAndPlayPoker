@@ -133,6 +133,9 @@ def undeal():
     try:
         people_collection.update_many({}, {"$unset": {"hand": ""}})
         board_collection.update_one({}, {"$unset": {"board": ""}})
+        board_collection.update_one({}, {"$unset": {"current_leader": ""}})
+        board_collection.update_one({}, {"$unset": {"current": ""}})
+        board_collection.update_one({}, {"$unset": {"post_flop_leader": ""}})
         return jsonify("Successful undeal"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -206,6 +209,32 @@ def increment_game_state():
     try:
         board_collection.update_one({}, {"$inc": {"game_state": 1}})
         return jsonify("Game state incremented"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/current", methods=["POST"])
+def increment_current():
+    try:
+        current = board_collection.find_one().get("current", -1)
+        people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
+        valid_players = [person for person in people if person["dollars"] > 0]
+        current = (current + 1) % len(people)
+        while people[current]["dollars"] == 0:
+            current = (current + 1) % len(people)
+        if(current == board_collection.find_one().get("current_leader", -1)):
+            increment_game_state()
+            current = board_collection.find_one().get("post_flop_leader", -1)
+            board_collection.update_one({}, {"$set": {"current_leader": current}})
+        board_collection.update_one({}, {"$set": {"current": current}})
+        return jsonify("Current incremented"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/current", methods=["GET"])
+def get_current():
+    try:
+        current = board_collection.find_one().get("current", -1)
+        return jsonify(current), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
