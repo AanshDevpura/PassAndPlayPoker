@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import './Start.css';
 import NamesList from './NamesList';
 import NamesForm from './NamesForm';
-import { fetchPeople, fetchBigBlind } from './Api';
+import { fetchPeople } from './Api';
 import { useNavigate } from 'react-router-dom';
 
-const Start = ({ people, setPeople, bigBlind, setBigBlind}) => {
+const Start = ({ people, setPeople}) => {
   const [newPerson, setNewPerson] = useState({ name: '', dollars: '' });
+  const [bigBlind, setBigBlind] = useState('');
   const [editIndex, setEditIndex] = useState(null);
   const navigate = useNavigate();
 
@@ -113,6 +114,19 @@ const Start = ({ people, setPeople, bigBlind, setBigBlind}) => {
       console.error('Error setting big blind:', error);
     }
   };
+  
+  const fetchBigBlind = async (setBigBlind) => {
+    try {
+      const response = await fetch('/poker/big_blind');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setBigBlind(data);
+    } catch (error) {
+      console.error('Error fetching big blind:', error);
+    }
+  }
 
   const handlePlayPoker = async () => {
     await handleBigBlind();
@@ -121,7 +135,7 @@ const Start = ({ people, setPeople, bigBlind, setBigBlind}) => {
 
   const handleBlindChange = (e) => {
     if (e.target.value < 0) {
-      setBigBlind(0)
+      setBigBlind('')
       alert("Please enter a positive number for Big Blind.");
     } else {
       setBigBlind(e.target.value)

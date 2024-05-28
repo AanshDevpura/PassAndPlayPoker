@@ -93,11 +93,12 @@ def modify_big_blind():
 @app.route("/poker/big_blind", methods=["GET"])
 def get_big_blind():
     try:
-        big_blind = board_collection.find_one()
-        if big_blind:
-            return jsonify(big_blind.get("big_blind", 0)), 200
+        board = board_collection.find_one()
+        if board:
+            return jsonify(board.get("big_blind", 0)), 200
         else:
-            return jsonify({"error": "Big blind not found"}), 404
+            return jsonify(''), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -120,12 +121,16 @@ def deal():
             people_collection.update_one({"_id": player["_id"]}, {"$set": {"hand": cards}})
         
         people_collection.update_many({}, {"$set": {"betted": 0}})
+        set_can_raise()
 
         board_cards = [deck.deal_card() for _ in range(5)]
-        board_collection.update_one({}, {"$set": {"board": board_cards}}, upsert=True)
+        board_collection.update_one({}, {"$set": {"board_cards": board_cards}}, upsert=True)
         board_collection.update_one({}, {"$set": {"game_state": 0}}, upsert=True)
         board_collection.update_one({}, {"$set": {"pot": 0}}, upsert=True)
         board_collection.update_one({}, {"$set": {"total_bet": 0}}, upsert=True)
+        big_blind = board_collection.find_one().get("big_blind", 0)
+        board_collection.update_one({}, {"$set": {"min_raise": big_blind}}, upsert=True)
+
         return jsonify("Successful deal"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -135,24 +140,15 @@ def undeal():
     try:
         people_collection.update_many({}, {"$unset": {"hand": ""}})
         people_collection.update_many({}, {"$unset": {"betted": ""}})
-        board_collection.update_one({}, {"$unset": {"board": ""}})
+        board_collection.update_one({}, {"$unset": {"board_cards": ""}})
         board_collection.update_one({}, {"$unset": {"current_leader": ""}})
         board_collection.update_one({}, {"$unset": {"current": ""}})
         board_collection.update_one({}, {"$unset": {"post_flop_leader": ""}})
         board_collection.update_one({}, {"$unset": {"pot": ""}})
         board_collection.update_one({}, {"$unset": {"total_bet": ""}})
+        board_collection.update_one({}, {"$unset": {"game_state": ""}})
+        board_collection.update_one({}, {"$unset": {"min_raise": ""}})
         return jsonify("Successful undeal"), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/poker/board_cards", methods=["GET"])
-def get_flop():
-    try:
-        board = board_collection.find_one()
-        if board:
-            return jsonify(board.get("board", [])), 200
-        else:
-            return jsonify({"error": "Board not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -202,36 +198,29 @@ def get_special_players():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/game_state", methods=["GET"])
-def get_game_state():
-    try:
-        game_state = board_collection.find_one().get("game_state", -1)
-        return jsonify(game_state), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/poker/game_state", methods=["POST"])
 def increment_game_state():
     try:
         board_collection.update_one({}, {"$inc": {"game_state": 1}})
+        big_blind = board_collection.find_one().get("big_blind", 0)
+        board_collection.update_one({}, {"$set": {"min_raise": big_blind}})
+        set_can_raise()
         return jsonify("Game state incremented"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/current", methods=["POST"])
 def increment_current():
     try:
         people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
         valid_players = [person for person in people if person["dollars"] > 0 and "hand" in person]
-        if not valid_players or len(valid_players) == 1:
-            board_collection.update_one({}, {"$set": {"game_state": 4}})
-            return jsonify("Game over"), 200
         current = board_collection.find_one().get("current", -1)
         current_leader = board_collection.find_one().get("current_leader", -1)
         next_round = False
         while True:
             current = (current + 1) % len(people)
             if(current_leader == current):
+                if not valid_players or len(valid_players) == 1:
+                    board_collection.update_one({}, {"$set": {"game_state": 4}})
+                    return jsonify("Game over"), 200
                 increment_game_state()
                 current = board_collection.find_one().get("post_flop_leader", -1)
                 next_round = True
@@ -244,8 +233,6 @@ def increment_current():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-#implement raising
 @app.route("/poker/raise/<string:person_id>", methods=["POST"])
 def raise_dollars(person_id):
     try:
@@ -267,11 +254,12 @@ def raise_dollars(person_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#this should work for poker checking
+#call and check are same
 @app.route("/poker/call/<string:person_id>", methods=["POST"])
 def call(person_id):
     try:
         person = people_collection.find_one({"_id": ObjectId(person_id)})
+        set_cannot_raise(person_id)
         if person:
             total_bet = board_collection.find_one().get("total_bet", 0)
             amount = total_bet - person.get("betted", 0)
@@ -286,37 +274,46 @@ def call(person_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/pot", methods=["GET"])
-def get_pot():
+#get board
+@app.route("/poker/board", methods=["GET"])
+def get_board():
     try:
-        pot = board_collection.find_one().get("pot", -1)
-        return jsonify(pot), 200
+        board = board_collection.find_one()
+        if board:
+            board["_id"] = str(board["_id"])
+            return jsonify(board), 200
+        else:
+            return jsonify({"error": "Board not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/total_bet", methods=["GET"])
-def get_total_bet():
+
+#function to raise the min raise
+@app.route("/poker/min_raise", methods=["POST"])
+def raise_min_raise():
     try:
-        total_bet = board_collection.find_one().get("total_bet", -1)
-        return jsonify(total_bet), 200
+        amount = float(request.json.get("amount"))
+        board_collection.update_one({}, {"$set": {"min_raise": amount}})
+        return jsonify(amount), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/current", methods=["GET"])
-def get_current():
+#fucnction to set that everyone can raise
+@app.route("/poker/can_raise", methods=["POST"])
+def set_can_raise():
     try:
-        current = board_collection.find_one().get("current", -1)
-        return jsonify(current), 200
+        people_collection.update_many({}, {"$set": {"can_raise": True}})
+        return jsonify("Can Raise Updates"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/current_leader", methods=["GET"])
-def get_current_leader():
+#function to set the person cannot raise
+@app.route("/poker/cannot_raise/<string:person_id>", methods=["POST"])
+def set_cannot_raise(person_id):
     try:
-        current_leader = board_collection.find_one().get("current_leader", -1)
-        return jsonify(current_leader), 200
+        people_collection.update_one({"_id": ObjectId(person_id)}, {"$set": {"can_raise": False}})
+        return ("Can Raise Updates"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 if __name__ == "__main__":
     app.run(debug=True)
