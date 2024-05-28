@@ -84,7 +84,7 @@ def delete_person(person_id):
 @app.route("/poker/big_blind", methods=["POST"])
 def modify_big_blind():
     try:
-        big_blind_value = request.json.get("bigBlind")        
+        big_blind_value = float(request.json.get("bigBlind"))        
         result = board_collection.update_one({}, {"$set": {"big_blind": big_blind_value}}, upsert=True)
         return jsonify("Big blind set"), 200
     except Exception as e:
@@ -119,11 +119,13 @@ def deal():
             cards = [deck.deal_card() for _ in range(2)]
             people_collection.update_one({"_id": player["_id"]}, {"$set": {"hand": cards}})
         
+        people_collection.update_many({}, {"$set": {"betted": 0}})
+
         board_cards = [deck.deal_card() for _ in range(5)]
         board_collection.update_one({}, {"$set": {"board": board_cards}}, upsert=True)
         board_collection.update_one({}, {"$set": {"game_state": 0}}, upsert=True)
         board_collection.update_one({}, {"$set": {"pot": 0}}, upsert=True)
-        board_collection.update_one({}, {"$set": {"round_bet": 0}}, upsert=True)
+        board_collection.update_one({}, {"$set": {"total_bet": 0}}, upsert=True)
         return jsonify("Successful deal"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -138,7 +140,7 @@ def undeal():
         board_collection.update_one({}, {"$unset": {"current": ""}})
         board_collection.update_one({}, {"$unset": {"post_flop_leader": ""}})
         board_collection.update_one({}, {"$unset": {"pot": ""}})
-        board_collection.update_one({}, {"$unset": {"round_bet": ""}})
+        board_collection.update_one({}, {"$unset": {"total_bet": ""}})
         return jsonify("Successful undeal"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -242,25 +244,26 @@ def increment_current():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 #implement raising
-@app.route("/poker/raise/<string:person_id>/<int:amount>", methods=["POST"])
-def raise_dollars(person_id, amount):
+@app.route("/poker/raise/<string:person_id>", methods=["POST"])
+def raise_dollars(person_id):
     try:
+        amount = float(request.json.get("amount"))
         person = people_collection.find_one({"_id": ObjectId(person_id)})
         if person:
-            amount += board_collection.find_one().get("round_bet", 0) - person.get("betted", 0)
-            amount = min(amount, person["dollars"])
+            amount += board_collection.find_one().get("total_bet", 0) - person.get("betted", 0)
             people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"dollars": -amount}})
             people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"betted": amount}})
             board_collection.update_one({}, {"$inc": {"pot": amount}})
             current = board_collection.find_one().get("current", -1)
             board_collection.update_one({}, {"$set": {"current_leader": current}})
             total_bet = person.get("betted", 0) + amount
-            board_collection.update_one({}, {"$set": {"round_bet": total_bet}})
+            board_collection.update_one({}, {"$set": {"total_bet": total_bet}})
             increment_current()
             return jsonify(amount), 200
         else:
-            return jsonify({"error": "Person not found"}), 404
+            return jsonify({"error": "Person not found"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -270,8 +273,8 @@ def call(person_id):
     try:
         person = people_collection.find_one({"_id": ObjectId(person_id)})
         if person:
-            round_bet = board_collection.find_one().get("round_bet", 0)
-            amount = round_bet - person.get("betted", 0)
+            total_bet = board_collection.find_one().get("total_bet", 0)
+            amount = total_bet - person.get("betted", 0)
             amount = min(amount, person["dollars"])
             people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"dollars": -amount}})
             people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"betted": amount}})
@@ -291,11 +294,11 @@ def get_pot():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/round_bet", methods=["GET"])
-def get_round_bet():
+@app.route("/poker/total_bet", methods=["GET"])
+def get_total_bet():
     try:
-        round_bet = board_collection.find_one().get("round_bet", -1)
-        return jsonify(round_bet), 200
+        total_bet = board_collection.find_one().get("total_bet", -1)
+        return jsonify(total_bet), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

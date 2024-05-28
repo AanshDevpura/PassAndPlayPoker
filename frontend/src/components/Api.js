@@ -23,6 +23,6 @@ export const fetchBigBlind = async (setBigBlind) => {
     setBigBlind(data);
     return data;
   } catch (error) {
-    console.error('Error fetching people:', error);
+    console.error('Error fetching bigblind:', error);
   }
 };

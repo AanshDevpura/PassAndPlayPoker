@@ -16,8 +16,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path='/' element={<Start people={people} setPeople={setPeople} bigBlind = {bigBlind} setBigBlind = {setBigBlind}/>} />
-        <Route path='/poker' element={<Poker people={people} setPeople={setPeople} />} />
+        <Route path='/' element={<Start people={people} setPeople={setPeople} bigBlind ={bigBlind} setBigBlind={setBigBlind}/>} />
+        <Route path='/poker' element={<Poker people={people} setPeople={setPeople} bigBlind={bigBlind} setBigBlind={setBigBlind} />} />
       </Routes>
     </Router>
   );

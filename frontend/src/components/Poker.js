@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchPeople } from './Api';
+import { fetchPeople, fetchBigBlind} from './Api';
 import './Poker.css';
 
 function getPlayerPosition(index, totalPlayers) {
@@ -28,7 +28,7 @@ function getPlayerPosition(index, totalPlayers) {
   return { x, y };
 }
 
-function Poker({ people, setPeople }) {
+function Poker({ people, setPeople, bigBlind, setBigBlind}) {
   const [boardCards, setBoardCards] = useState([]);
   const [gameState, setGameState] = useState(0);
   const [showHands, setShowHands] = useState([]);
@@ -37,10 +37,22 @@ function Poker({ people, setPeople }) {
   const [currentLeader, setCurrentLeader] = useState(0);
   const [totalBet, setTotalBet] = useState(0);
   const [pot, setPot] = useState(0);
+  const [minRaise, setMinRaise] = useState(0);
+  const [raise, setRaise] = useState(0);
+  const [canReRaise, setCanReRaise] = useState([]);
+
+  useEffect(() => {
+    fetchBigBlind(setBigBlind);
+  }, [setBigBlind]);
 
   useEffect(() => {
     handleUndeal();
   }, []);
+
+  useEffect(() => {
+    setMinRaise(bigBlind);
+  }, [gameState, bigBlind]);
+
   const fetchCurrent = async () => {
     try {
       const response = await fetch('/poker/current', {
@@ -113,8 +125,6 @@ function Poker({ people, setPeople }) {
     }
   }
 
-
-
   const updateCurrent = async () => {
     try {
       const response = await fetch('/poker/current', {
@@ -136,12 +146,41 @@ function Poker({ people, setPeople }) {
   }
 
   const handleRaise = async (personId, amount) => {
+    const index = people.findIndex(p => p._id === personId);
+    const person = people[index];
+
+    if (amount < minRaise && person.dollars >= (minRaise + totalBet - person.betted)) {
+      alert(`Raise amount must be at least ${minRaise} unless you are going all in`);
+      return;
+    }
+    if (person.dollars < (minRaise + totalBet - person.betted) && person.dollars > (amount + totalBet - person.betted)) {
+      alert(`You must go all in with ${person.dollars}`);
+      return;
+    }
+    if ((amount + totalBet - person.betted) > person.dollars) {
+      alert(`You do not have enough money to raise ${amount}`);
+      return;
+    }
+    if (!canReRaise[index]) {
+      alert('You cannot raise again because there have been no not proper raises since your last raise');
+      return;
+    }
+    console.log(canReRaise)
+    console.log(index)
+    if(person.dollars >= (minRaise + totalBet - person.betted)) {
+      setMinRaise(amount);
+      // this person cannot raise again unless someome else raises (not partial raise)
+      const newCanReRaise = new Array(people.length).fill(true);
+      newCanReRaise[index] = false;
+      setCanReRaise(newCanReRaise);
+    }
     try {
-      const response = await fetch(`/poker/raise/${personId}/${amount}`, {
+      const response = await fetch(`/poker/raise/${personId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ amount }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -152,6 +191,7 @@ function Poker({ people, setPeople }) {
       await fetchCurrent();
       await fetchGameState();
       await fetchCurrentLeader();
+      setRaise(0);
       setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error raising:', error);
@@ -180,7 +220,6 @@ function Poker({ people, setPeople }) {
       console.error('Error calling:', error);
     }
   };
-
 
   const fetchGameState = async () => {
     try {
@@ -215,6 +254,7 @@ function Poker({ people, setPeople }) {
       await fetchCurrent();
       await fetchGameState();
       await fetchCurrentLeader();
+      setRaise(0);
       setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error folding:', error);
@@ -258,6 +298,8 @@ function Poker({ people, setPeople }) {
       await fetchGameState();
       await fetchCurrent();
       await fetchCurrentLeader();
+      await setCanReRaise(new Array(people.length).fill(true));
+      await fetchPot();
       setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error dealing:', error);
@@ -279,11 +321,11 @@ function Poker({ people, setPeople }) {
       await fetchBoardCards();
       await fetchCurrent();
       await fetchPeople(setPeople);
+      await setMinRaise(bigBlind)
     } catch (error) {
       console.error('Error undealing:', error);
     }
   };
-
 
   const fetchBoardCards = async () => {
     try {
@@ -314,6 +356,7 @@ function Poker({ people, setPeople }) {
       });
     }
   };
+
   return (
     <div>
       <button onClick={handleDeal}>Deal</button>
@@ -324,6 +367,7 @@ function Poker({ people, setPeople }) {
         <span>Game State: {gameState}</span>
         <span>Total Bet: {totalBet}</span>
         <span>Pot: {pot}</span>
+        <span>minRaise: {minRaise}</span>
       </div>
       <Link to="/">
         <button>Edit Players</button>
@@ -358,11 +402,19 @@ function Poker({ people, setPeople }) {
                       )}
                     </div>
 
-                    {index === current &&<div>
-                      <button onClick={() => handleFold(person._id)}>Fold</button>
-                      <button onClick={() => handleCall(person._id)}>Check/Call</button>
-                      <button onClick={() => handleRaise(person._id, 10)}>Raise</button>
-                    </div>}
+                    {index === current && (
+                      <div>
+                        <button onClick={() => handleFold(person._id)}>Fold</button>
+                        <button onClick={() => handleCall(person._id)}>Check/Call</button>
+                        <input
+                          type="number"
+                          value={raise}
+                          onChange={(e) => setRaise(Number(e.target.value))}
+                          placeholder={`Min raise: ${minRaise}`}
+                        />
+                        <button onClick={() => handleRaise(person._id, raise)}>Raise</button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
