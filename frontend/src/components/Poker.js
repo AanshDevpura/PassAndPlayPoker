@@ -125,6 +125,7 @@ function Poker({ people, setPeople}) {
   const handleRaise = async (personId, amount) => {
     const index = people.findIndex(p => p._id === personId);
     const person = people[index];
+    amount = Number(amount);
     if (amount < minRaise && person.dollars >= (minRaise + totalBet - person.betted)) {
       alert(`Raise amount must be at least ${minRaise} unless you are going all in`);
       return;
@@ -212,6 +213,7 @@ function Poker({ people, setPeople}) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      console.log(data);
       setSpecialPlayers(data);
     } catch (error) {
       console.error('Error fetching special players:', error);
@@ -316,15 +318,18 @@ function Poker({ people, setPeople}) {
                     {index === current && (
                       <div>
                         <button onClick={() => handleFold(person._id)}>Fold</button>
-                        <button onClick={() => handleCall(person._id)}>Check/Call</button>
+                        {totalBet - person.betted == 0 ?(
+                          <button onClick={() => handleCall(person._id)}>Check</button>
+                        ) : (
+                          <button onClick={() => handleCall(person._id)}>Call: {Math.min(person.dollars, totalBet - person.betted)}</button>
+                        )}
                         {person.can_raise && person.dollars - totalBet + person.betted > 0 && (
                           <div>
                             <input
                               type="number"
                               value={raise}
                               onChange={(e) => setRaise(e.target.value)}
-                              
-                              placeholder={`Min raise: ${Math.min(minRaise, person.dollars - totalBet + person.betted)}`}
+                              placeholder={`Min: ${Math.min(minRaise, person.dollars - totalBet + person.betted)}, Max: ${person.dollars - totalBet + person.betted}`}
                             />
                             <button onClick={() => handleRaise(person._id, raise)}>Raise</button>
                           </div>

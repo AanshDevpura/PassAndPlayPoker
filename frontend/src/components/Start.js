@@ -105,7 +105,7 @@ const Start = ({ people, setPeople}) => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ bigBlind }),
+        body: JSON.stringify({bigBlind}),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

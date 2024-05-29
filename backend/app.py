@@ -81,6 +81,7 @@ def delete_person(person_id):
     except errors.InvalidId:
         return jsonify({"error": "Invalid ObjectId"}), 400
 
+# Modify big blind
 @app.route("/poker/big_blind", methods=["POST"])
 def modify_big_blind():
     try:
@@ -90,6 +91,7 @@ def modify_big_blind():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Get big blind if exists
 @app.route("/poker/big_blind", methods=["GET"])
 def get_big_blind():
     try:
@@ -102,6 +104,7 @@ def get_big_blind():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Simulate a deck of cards
 class Deck:
     def __init__(self):
         self.cards = [f'{rank}{suit}' for suit in 'shdc' for rank in '23456789TJQKA']
@@ -109,13 +112,14 @@ class Deck:
     def deal_card(self):
         return self.cards.pop(0)
 
-# Deal 2 cards to each player and make board
+# Deal 2 cards to each player with money and deal board cards
+# Initialize a lot of game variables
 @app.route("/poker/deal", methods=["POST"])
 def deal():
     try:
+        undeal()
         players = list(people_collection.find({"dollars": {"$gt": 0}}))
         deck = Deck()
-        undeal()
         for player in players:
             cards = [deck.deal_card() for _ in range(2)]
             people_collection.update_one({"_id": player["_id"]}, {"$set": {"hand": cards}})
@@ -135,6 +139,7 @@ def deal():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Undeal all cards and reset the game variables
 @app.route("/poker/undeal", methods=["DELETE"])
 def undeal():
     try:
@@ -152,15 +157,7 @@ def undeal():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/fold/<string:person_id>", methods=["POST"])
-def fold(person_id):
-    try:
-        people_collection.update_one({"_id": ObjectId(person_id)}, {"$unset": {"hand": ""}})
-        increment_current()
-        return jsonify("Successful fold"), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+# Get the dealer, small blind, big blind, preflop leader, and postflop leader for the round
 @app.route("/poker/special_people", methods=["GET"])
 def get_special_players():
     try:
@@ -198,6 +195,7 @@ def get_special_players():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Increment the game state (0:4 - preflop, flop, turn, river, end)
 def increment_game_state():
     try:
         board_collection.update_one({}, {"$inc": {"game_state": 1}})
@@ -208,23 +206,29 @@ def increment_game_state():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Increment the current player
+# Updates game state if needed
 def increment_current():
     try:
         people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
-        valid_players = [person for person in people if person["dollars"] > 0 and "hand" in person]
+        players_with_cards = [person for person in people if "hand" in person]
+        if not players_with_cards or len(players_with_cards) == 1:
+            board_collection.update_one({}, {"$set": {"game_state": 4}})
+            return jsonify("Game over"), 200
+        players_with_moves = [person for person in people if person["dollars"] > 0 and "hand" in person]
         current = board_collection.find_one().get("current", -1)
         current_leader = board_collection.find_one().get("current_leader", -1)
         next_round = False
         while True:
             current = (current + 1) % len(people)
             if(current_leader == current):
-                if not valid_players or len(valid_players) == 1:
+                if not players_with_moves or len(players_with_moves) == 1:
                     board_collection.update_one({}, {"$set": {"game_state": 4}})
                     return jsonify("Game over"), 200
                 increment_game_state()
                 current = board_collection.find_one().get("post_flop_leader", -1)
                 next_round = True
-            if not(people[current]["dollars"] == 0 or "hand" not in people[current]):
+            if people[current]["dollars"] > 0 and "hand" in people[current]:
                 break
         if next_round:
             board_collection.update_one({}, {"$set": {"current_leader": current}})
@@ -233,6 +237,7 @@ def increment_current():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Raise the bet by a certain amount
 @app.route("/poker/raise/<string:person_id>", methods=["POST"])
 def raise_dollars(person_id):
     try:
@@ -254,7 +259,7 @@ def raise_dollars(person_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#call and check are same
+# Call/check the bet
 @app.route("/poker/call/<string:person_id>", methods=["POST"])
 def call(person_id):
     try:
@@ -273,8 +278,17 @@ def call(person_id):
             return jsonify({"error": "Person not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-#get board
+# Fold the hand
+@app.route("/poker/fold/<string:person_id>", methods=["POST"])
+def fold(person_id):
+    try:
+        people_collection.update_one({"_id": ObjectId(person_id)}, {"$unset": {"hand": ""}})
+        increment_current()
+        return jsonify("Successful fold"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+        
+# Get all board variables
 @app.route("/poker/board", methods=["GET"])
 def get_board():
     try:
@@ -287,8 +301,7 @@ def get_board():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-#function to raise the min raise
+# Raise the min raise
 @app.route("/poker/min_raise", methods=["POST"])
 def raise_min_raise():
     try:
@@ -298,7 +311,7 @@ def raise_min_raise():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#fucnction to set that everyone can raise
+# Set that everyone can raise
 @app.route("/poker/can_raise", methods=["POST"])
 def set_can_raise():
     try:
@@ -307,7 +320,7 @@ def set_can_raise():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#function to set the person cannot raise
+# Set the person cannot raise
 @app.route("/poker/cannot_raise/<string:person_id>", methods=["POST"])
 def set_cannot_raise(person_id):
     try:
