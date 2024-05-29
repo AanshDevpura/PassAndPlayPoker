@@ -80,14 +80,15 @@ def best_value(seven_hand):
         best = max(best, hand_value(five_hand))
     return best
 
-def compare_hands(people):
+def compare_hands(people, board):
     best_idx = None
     best_score = float('-inf')
-    for i in range(len(people)):
-        temp = best_value(people[i])
-        if temp > best_score:
-            best_score = temp
+    seven_hand = [person + board for person in people]
+    for i in range(len(seven_hand)):
+        score = best_value(seven_hand[i])
+        if score > best_score:
+            best_score = score
             best_idx = [i]
-        elif temp == best_score:
+        elif score == best_score:
             best_idx.append(i)
     return best_idx

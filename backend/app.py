@@ -125,7 +125,7 @@ def deal():
             people_collection.update_one({"_id": player["_id"]}, {"$set": {"hand": cards}})
         
         people_collection.update_many({}, {"$set": {"betted": 0}})
-        set_can_raise()
+        people_collection.update_many({}, {"$set": {"can_raise": True}})
 
         board_cards = [deck.deal_card() for _ in range(5)]
         board_collection.update_one({}, {"$set": {"board_cards": board_cards}}, upsert=True)
@@ -134,6 +134,37 @@ def deal():
         board_collection.update_one({}, {"$set": {"total_bet": 0}}, upsert=True)
         big_blind = board_collection.find_one().get("big_blind", 0)
         board_collection.update_one({}, {"$set": {"min_raise": big_blind}}, upsert=True)
+
+        # Get the dealer, small blind, big blind, preflop leader, and postflop leader for the round
+        people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
+        valid_players = [person for person in people if person["dollars"] > 0]
+        valid_players_count = len(valid_players)
+        
+        dealer = (board_collection.find_one().get("dealer", -1) + 1) % len(people)
+        while people[dealer]["dollars"] == 0:
+            dealer = (dealer + 1) % len(people)
+        board_collection.update_one({}, {"$set": {"dealer": dealer}}, upsert=True)
+
+        if valid_players_count == 2:
+            small_blind = dealer
+        else:
+            small_blind = (dealer + 1) % len(people)
+            while people[small_blind]["dollars"] == 0:
+                small_blind = (small_blind + 1) % len(people)
+        
+        board_collection.update_one({}, {"$set": {"small_blind_player": small_blind}}, upsert=True)
+        big_blind = (small_blind + 1) % len(people)
+        while people[big_blind]["dollars"] == 0:
+            big_blind = (big_blind + 1) % len(people)
+        board_collection.update_one({}, {"$set": {"big_blind_player": big_blind}}, upsert=True)
+        pre_flop_leader = (big_blind + 1) % len(people)
+        while people[pre_flop_leader]["dollars"] == 0:
+            pre_flop_leader = (pre_flop_leader + 1) % len(people)
+        board_collection.update_one({}, {"$set": {"current_leader": pre_flop_leader}}, upsert=True)
+        board_collection.update_one({}, {"$set": {"current": pre_flop_leader}}, upsert=True)
+        post_flop_leader = big_blind if valid_players_count == 2 else small_blind
+        board_collection.update_one({}, {"$set": {"post_flop_leader": post_flop_leader}}, upsert=True)
+
 
         return jsonify("Successful deal"), 200
     except Exception as e:
@@ -153,45 +184,12 @@ def undeal():
         board_collection.update_one({}, {"$unset": {"total_bet": ""}})
         board_collection.update_one({}, {"$unset": {"game_state": ""}})
         board_collection.update_one({}, {"$unset": {"min_raise": ""}})
+        board_collection.update_one({}, {"$unset": {"small_blind_player": ""}})
+        board_collection.update_one({}, {"$unset": {"big_blind_player": ""}})
+        board_collection.update_one({}, {"$unset": {"current_leader": ""}})
+        board_collection.update_one({}, {"$unset": {"current": ""}})
+        board_collection.update_one({}, {"$unset": {"post_flop_leader": ""}})
         return jsonify("Successful undeal"), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# Get the dealer, small blind, big blind, preflop leader, and postflop leader for the round
-@app.route("/poker/special_people", methods=["GET"])
-def get_special_players():
-    try:
-        people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
-        valid_players = [person for person in people if person["dollars"] > 0]
-        valid_players_count = len(valid_players)
-        if not valid_players or len(valid_players) == 1:
-            board_collection.update_one({}, {"$unset": {"dealer": ""}})
-            return jsonify([]), 200
-        
-        dealer = (board_collection.find_one().get("dealer", -1) + 1) % len(people)
-        while people[dealer]["dollars"] == 0:
-            dealer = (dealer + 1) % len(people)
-        board_collection.update_one({}, {"$set": {"dealer": dealer}})
-
-        if valid_players_count == 2:
-            small_blind = dealer
-        else:
-            small_blind = (dealer + 1) % len(people)
-            while people[small_blind]["dollars"] == 0:
-                small_blind = (small_blind + 1) % len(people)
-
-        big_blind = (small_blind + 1) % len(people)
-        while people[big_blind]["dollars"] == 0:
-            big_blind = (big_blind + 1) % len(people)
-        
-        pre_flop_leader = (big_blind + 1) % len(people)
-        while people[pre_flop_leader]["dollars"] == 0:
-            pre_flop_leader = (pre_flop_leader + 1) % len(people)
-        board_collection.update_one({}, {"$set": {"current_leader": pre_flop_leader}})
-        board_collection.update_one({}, {"$set": {"current": pre_flop_leader}})
-        post_flop_leader = big_blind if valid_players_count == 2 else small_blind
-        board_collection.update_one({}, {"$set": {"post_flop_leader": post_flop_leader}})
-        return jsonify([dealer, small_blind, big_blind]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -201,7 +199,7 @@ def increment_game_state():
         board_collection.update_one({}, {"$inc": {"game_state": 1}})
         big_blind = board_collection.find_one().get("big_blind", 0)
         board_collection.update_one({}, {"$set": {"min_raise": big_blind}})
-        set_can_raise()
+        people_collection.update_many({}, {"$set": {"can_raise": True}})
         return jsonify("Game state incremented"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -241,10 +239,10 @@ def increment_current():
 @app.route("/poker/raise/<string:person_id>", methods=["POST"])
 def raise_dollars(person_id):
     try:
-        amount = float(request.json.get("amount"))
+        original_amount = float(request.json.get("amount"))
         person = people_collection.find_one({"_id": ObjectId(person_id)})
         if person:
-            amount += board_collection.find_one().get("total_bet", 0) - person.get("betted", 0)
+            amount = original_amount + board_collection.find_one().get("total_bet", 0) - person.get("betted", 0)
             people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"dollars": -amount}})
             people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"betted": amount}})
             board_collection.update_one({}, {"$inc": {"pot": amount}})
@@ -252,6 +250,11 @@ def raise_dollars(person_id):
             board_collection.update_one({}, {"$set": {"current_leader": current}})
             total_bet = person.get("betted", 0) + amount
             board_collection.update_one({}, {"$set": {"total_bet": total_bet}})
+            min_raise = board_collection.find_one().get("min_raise", 0)
+            if original_amount >= min_raise:
+                board_collection.update_one({}, {"$set": {"min_raise": amount}})
+                people_collection.update_many({}, {"$set": {"can_raise": True}})
+                people_collection.update_one({"_id": ObjectId(person_id)}, {"$set": {"can_raise": False}})
             increment_current()
             return jsonify(amount), 200
         else:
@@ -264,7 +267,7 @@ def raise_dollars(person_id):
 def call(person_id):
     try:
         person = people_collection.find_one({"_id": ObjectId(person_id)})
-        set_cannot_raise(person_id)
+        people_collection.update_one({"_id": ObjectId(person_id)}, {"$set": {"can_raise": False}})
         if person:
             total_bet = board_collection.find_one().get("total_bet", 0)
             amount = total_bet - person.get("betted", 0)
@@ -301,32 +304,5 @@ def get_board():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Raise the min raise
-@app.route("/poker/min_raise", methods=["POST"])
-def raise_min_raise():
-    try:
-        amount = float(request.json.get("amount"))
-        board_collection.update_one({}, {"$set": {"min_raise": amount}})
-        return jsonify(amount), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# Set that everyone can raise
-@app.route("/poker/can_raise", methods=["POST"])
-def set_can_raise():
-    try:
-        people_collection.update_many({}, {"$set": {"can_raise": True}})
-        return jsonify("Can Raise Updates"), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# Set the person cannot raise
-@app.route("/poker/cannot_raise/<string:person_id>", methods=["POST"])
-def set_cannot_raise(person_id):
-    try:
-        people_collection.update_one({"_id": ObjectId(person_id)}, {"$set": {"can_raise": False}})
-        return ("Can Raise Updates"), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 if __name__ == "__main__":
     app.run(debug=True)

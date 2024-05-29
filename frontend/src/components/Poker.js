@@ -32,13 +32,14 @@ function Poker({ people, setPeople}) {
   const [boardCards, setBoardCards] = useState([]);
   const [gameState, setGameState] = useState(0);
   const [showHands, setShowHands] = useState([]);
-  const [specialPlayers, setSpecialPlayers] = useState([]);
   const [current, setCurrent] = useState(0);
-  const [currentLeader, setCurrentLeader] = useState(0);
   const [totalBet, setTotalBet] = useState(0);
   const [pot, setPot] = useState(0);
   const [minRaise, setMinRaise] = useState(0);
   const [raise, setRaise] = useState('');
+  const [dealer, setDealer] = useState(-1);
+  const [smallBlindPlayer, setSmallBlindPLayer] = useState(-1);
+  const [bigBlindPlayer, setBigBlindPlayer] = useState(-1);
 
   useEffect(() => {
     handleUndeal();
@@ -59,9 +60,11 @@ function Poker({ people, setPeople}) {
       setPot(data.pot || 0);
       setTotalBet(data.total_bet || 0);
       setCurrent(data.current || 0);
-      setCurrentLeader(data.current_leader || 0);
       setMinRaise(data.min_raise || 0);
       setGameState(data.game_state || 0);
+      setDealer(data.dealer || 0);
+      setSmallBlindPLayer(data.small_blind_player || 0);
+      setBigBlindPlayer(data.big_blind_player || 0);
       setShowHands(new Array(people.length).fill(false));
       setRaise('');
     }
@@ -70,58 +73,6 @@ function Poker({ people, setPeople}) {
     }
   }
 
-  const updateMinRaise = async (amount) => {
-    try {
-      const response = await fetch('/poker/min_raise', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ amount }),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      await getBoardVariables();
-    } catch (error) {
-      console.error('Error updating min raise:', error);
-    }
-  }
-
-  const updateCannotRaise = async (personId) => {
-    try {
-      const response = await fetch(`/poker/cannot_raise/${personId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      await fetchPeople(setPeople);
-    } catch (error) {
-      console.error('Error updating cannot raise:', error);
-    }
-  }
-
-  const updateCanRaise = async () => {
-    try {
-      const response = await fetch('/poker/can_raise', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      await fetchPeople(setPeople);
-    } catch (error) {
-      console.error('Error updating can raise:', error);
-    }
-  }
-  
   const handleRaise = async (personId, amount) => {
     const index = people.findIndex(p => p._id === personId);
     const person = people[index];
@@ -148,12 +99,6 @@ function Poker({ people, setPeople}) {
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      if(person.dollars >= (minRaise + totalBet - person.betted)) {
-        updateMinRaise(amount);
-        // this person cannot raise again unless someome else raises (not partial raise)
-        await updateCanRaise();
-        await updateCannotRaise(personId);
       }
       await fetchPeople(setPeople);
       await getBoardVariables();
@@ -200,26 +145,6 @@ function Poker({ people, setPeople}) {
     }
   };
 
-  const handleSpecialPlayers = async () => {
-    try {
-      const response = await fetch('/poker/special_people', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log(data);
-      setSpecialPlayers(data);
-    } catch (error) {
-      console.error('Error fetching special players:', error);
-    }
-  };
-
   const handleDeal = async () => {
     try {
       const response = await fetch('/poker/deal', {
@@ -233,7 +158,6 @@ function Poker({ people, setPeople}) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       await fetchPeople(setPeople);
-      await handleSpecialPlayers();
       await getBoardVariables();
       setShowHands(new Array(people.length).fill(false));
     } catch (error) {
@@ -255,6 +179,9 @@ function Poker({ people, setPeople}) {
       }
       await fetchPeople(setPeople);
       await getBoardVariables();
+      setDealer(-1);
+      setSmallBlindPLayer(-1);
+      setBigBlindPlayer(-1);
     } catch (error) {
       console.error('Error undealing:', error);
     }
@@ -272,16 +199,7 @@ function Poker({ people, setPeople}) {
 
   return (
     <div>
-      <button onClick={handleDeal}>Deal</button>
-      <button onClick={handleUndeal}>Undeal</button>
-      <div>
-        <span>Current: {current}</span>
-        <span>Current Leader: {currentLeader}</span>
-        <span>Game State: {gameState}</span>
-        <span>Total Bet: {totalBet}</span>
-        <span>Pot: {pot}</span>
-        <span>minRaise: {minRaise}</span>
-      </div>
+      <button onClick={handleDeal} disabled={people.filter(person => person.dollars > 0).length < 2}>Deal </button>
       <Link to="/">
         <button>Edit Players</button>
       </Link>
@@ -292,9 +210,9 @@ function Poker({ people, setPeople}) {
             return (
               <div className="outer-player-container" style={{ top: playerPosition.y, left: playerPosition.x }} key={index}>
                 <div className="player-info-container">
-                  {index === specialPlayers[0] && <span className="poker-d">D</span>}
-                  {index === specialPlayers[1] && <span className="poker-sb">SB</span>}
-                  {index === specialPlayers[2] && <span className="poker-bb">BB</span>}
+                  {index === dealer && <span className="poker-d">D</span>}
+                  {index === smallBlindPlayer && <span className="poker-sb">SB</span>}
+                  {index === bigBlindPlayer && <span className="poker-bb">BB</span>}
                   <span className="poker-name">{person.name}</span>
                   <span className={`poker-dollars ${person.dollars === 0 ? 'zero-dollars' : ''}`}>${person.dollars}</span>
                 </div>
