@@ -33,7 +33,7 @@ function Poker({ people, setPeople}) {
   const [gameState, setGameState] = useState(0);
   const [showHands, setShowHands] = useState([]);
   const [current, setCurrent] = useState(0);
-  const [totalBet, setTotalBet] = useState(0);
+  const [betPerPerson, setBetPerPerson] = useState(0);
   const [pot, setPot] = useState(0);
   const [minRaise, setMinRaise] = useState(0);
   const [raise, setRaise] = useState('');
@@ -42,8 +42,29 @@ function Poker({ people, setPeople}) {
   const [bigBlindPlayer, setBigBlindPlayer] = useState(-1);
 
   useEffect(() => {
-    handleUndeal();
-  }, []);
+    if (gameState === 4) {
+      handleEvaluateWinner();
+    }
+  }, [gameState]);
+  const handleEvaluateWinner = async () => {
+    try {
+      const response = await fetch('/poker/evaluate_winner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      await fetchPeople(setPeople);
+      await getBoardVariables();
+      setShowHands(new Array(people.length).fill(true));
+    } catch (error) {
+      console.error('Error evaluating winner:', error);
+    }
+  };
+
   const getBoardVariables = async () => {
     try {
       const response = await fetch('/poker/board', {
@@ -58,14 +79,13 @@ function Poker({ people, setPeople}) {
       const data = await response.json();
       setBoardCards(data.board_cards || []);
       setPot(data.pot || 0);
-      setTotalBet(data.total_bet || 0);
+      setBetPerPerson(data.bet_per_person || 0);
       setCurrent(data.current || 0);
       setMinRaise(data.min_raise || 0);
       setGameState(data.game_state || 0);
       setDealer(data.dealer || 0);
       setSmallBlindPLayer(data.small_blind_player || 0);
       setBigBlindPlayer(data.big_blind_player || 0);
-      setShowHands(new Array(people.length).fill(false));
       setRaise('');
     }
     catch (error) {
@@ -77,15 +97,15 @@ function Poker({ people, setPeople}) {
     const index = people.findIndex(p => p._id === personId);
     const person = people[index];
     amount = Number(amount);
-    if (amount < minRaise && person.dollars >= (minRaise + totalBet - person.betted)) {
+    if (amount < minRaise && person.dollars >= (minRaise + betPerPerson - person.betted)) {
       alert(`Raise amount must be at least ${minRaise} unless you are going all in`);
       return;
     }
-    if (person.dollars < (minRaise + totalBet - person.betted) && person.dollars > (amount + totalBet - person.betted)) {
-      alert(`To raise you must go all in with ${person.dollars} by raising ${person.dollars - totalBet + person.betted}`);
+    if (person.dollars < (minRaise + betPerPerson - person.betted) && person.dollars > (amount + betPerPerson - person.betted)) {
+      alert(`To raise you must go all in with ${person.dollars} by raising ${person.dollars - betPerPerson + person.betted}`);
       return;
     }
-    if ((amount + totalBet - person.betted) > person.dollars) {
+    if ((amount + betPerPerson - person.betted) > person.dollars) {
       alert(`You do not have enough money to raise ${amount}`);
       return;
     }
@@ -139,7 +159,6 @@ function Poker({ people, setPeople}) {
       }
       await fetchPeople(setPeople);
       await getBoardVariables();
-      setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error folding:', error);
     }
@@ -203,6 +222,9 @@ function Poker({ people, setPeople}) {
       <Link to="/">
         <button>Edit Players</button>
       </Link>
+      <div className="pot">Pot: ${pot}</div>
+      <div className="gameState">Game State: {gameState}</div>
+      <div className="bigBlind">Min Raise: ${minRaise}</div>
       <div className="table">
         <div className="players">
           {people.map((person, index) => {
@@ -236,18 +258,18 @@ function Poker({ people, setPeople}) {
                     {index === current && (
                       <div>
                         <button onClick={() => handleFold(person._id)}>Fold</button>
-                        {totalBet - person.betted == 0 ?(
+                        {betPerPerson - person.betted === 0 ?(
                           <button onClick={() => handleCall(person._id)}>Check</button>
                         ) : (
-                          <button onClick={() => handleCall(person._id)}>Call: {Math.min(person.dollars, totalBet - person.betted)}</button>
+                          <button onClick={() => handleCall(person._id)}>Call: {Math.min(person.dollars, betPerPerson - person.betted)}</button>
                         )}
-                        {person.can_raise && person.dollars - totalBet + person.betted > 0 && (
+                        {person.can_raise && person.dollars - betPerPerson + person.betted > 0 && (
                           <div>
                             <input
                               type="number"
                               value={raise}
                               onChange={(e) => setRaise(e.target.value)}
-                              placeholder={`Min: ${Math.min(minRaise, person.dollars - totalBet + person.betted)}, Max: ${person.dollars - totalBet + person.betted}`}
+                              placeholder={`Min: ${Math.min(minRaise, person.dollars - betPerPerson + person.betted)}, Max: ${person.dollars - betPerPerson + person.betted}`}
                             />
                             <button onClick={() => handleRaise(person._id, raise)}>Raise</button>
                           </div>

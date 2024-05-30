@@ -72,7 +72,7 @@ def hand_value(hand):
         return (1 << 20) + (most_common[0][0] << 12) + (most_common[1][0] << 8) + (most_common[2][0] << 4) + most_common[3][0]
     
     #high card
-        return (ranks[0] << 16) + (ranks[1] << 12) + (ranks[2] << 8) + (ranks[3] << 4) + ranks[4]
+    return (ranks[0] << 16) + (ranks[1] << 12) + (ranks[2] << 8) + (ranks[3] << 4) + ranks[4]
 
 def best_value(seven_hand):
     best = float('-inf')
@@ -83,7 +83,7 @@ def best_value(seven_hand):
 def compare_hands(people, board):
     best_idx = None
     best_score = float('-inf')
-    seven_hand = [person + board for person in people]
+    seven_hand = [person["hand"] + board for person in people]
     for i in range(len(seven_hand)):
         score = best_value(seven_hand[i])
         if score > best_score:
