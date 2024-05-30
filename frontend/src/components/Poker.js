@@ -31,7 +31,6 @@ function getPlayerPosition(index, totalPlayers) {
 function Poker({ people, setPeople}) {
   const [boardCards, setBoardCards] = useState([]);
   const [gameState, setGameState] = useState(4);
-  const [showHands, setShowHands] = useState([]);
   const [current, setCurrent] = useState(-1);
   const [betPerPerson, setBetPerPerson] = useState(0);
   const [pot, setPot] = useState(0);
@@ -41,6 +40,10 @@ function Poker({ people, setPeople}) {
   const [smallBlindPlayer, setSmallBlindPLayer] = useState(-1);
   const [bigBlindPlayer, setBigBlindPlayer] = useState(-1);
 
+  useEffect(() => {
+    fetchPeople(setPeople);
+    getBoardVariables();
+  }, [setPeople]);
   const getBoardVariables = async () => {
     try {
       const response = await fetch('/poker/board', {
@@ -59,9 +62,6 @@ function Poker({ people, setPeople}) {
       setCurrent(data.current || 0);
       setMinRaise(data.min_raise || 0);
       setGameState(data.game_state != null ? data.game_state : 4);
-      if (data.game_state === 4) {
-        setShowHands(new Array(people.length).fill(true));
-      }
       setDealer(data.dealer || 0);
       setSmallBlindPLayer(data.small_blind_player || 0);
       setBigBlindPlayer(data.big_blind_player || 0);
@@ -119,7 +119,6 @@ function Poker({ people, setPeople}) {
       }
       await fetchPeople(setPeople);
       await getBoardVariables();
-      setRaise('');
     } catch (error) {
       console.error('Error calling:', error);
     }
@@ -157,20 +156,48 @@ function Poker({ people, setPeople}) {
       }
       await fetchPeople(setPeople);
       await getBoardVariables();
-      setShowHands(new Array(people.length).fill(false));
     } catch (error) {
       console.error('Error dealing:', error);
     }
   };
 
-
-  const toggleShowHand = (index) => {
-    if (index === current) {
-      setShowHands(prev => {
-        const newShowHands = [...prev];
-        newShowHands[index] = !newShowHands[index];
-        return newShowHands;
+  const handleUndeal = async () => {
+    try {
+      const response = await fetch('/poker/undeal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      await fetchPeople(setPeople);
+      await getBoardVariables();
+    } catch (error) {
+      console.error('Error undealing:', error);
+    }
+  };
+
+
+  const toggleShowHand = async (index, personId) => {
+    if (index !== current) {
+      return;
+    }
+    try {
+      const response = await fetch(`/poker/show/${personId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      await fetchPeople(setPeople);
+    } catch (error) {
+      console.error('Error showing hand:', error);
     }
   };
 
@@ -211,8 +238,8 @@ function Poker({ people, setPeople}) {
 
                 {person.hand && (
                   <div>
-                    <div className="player-cards" onClick={() => toggleShowHand(index)}>
-                      {showHands[index] ? (
+                    <div className="player-cards" onClick={() => toggleShowHand(index, person._id)}>
+                      {person.show ? (
                         <div>
                           <card-t cid={person.hand[0]}></card-t>
                           <card-t cid={person.hand[1]}></card-t>

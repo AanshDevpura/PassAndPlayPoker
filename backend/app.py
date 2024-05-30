@@ -121,6 +121,7 @@ def deal():
         
         people_collection.update_many({}, {"$set": {"betted": 0}})
         people_collection.update_many({}, {"$set": {"can_raise": True}})
+        people_collection.update_many({}, {"$set": {"show": False}})
         people_collection.update_many({}, {"$set": {"won": 0}})
         people_collection.update_many({}, {"$set": {"score": 0}})
         people_collection.update_many({}, {"$set": {"score_str": ""}})
@@ -181,12 +182,16 @@ def deal():
         return jsonify({"error": str(e)}), 500
 
 # Undeal all cards and reset the game variables
-@app.route("/poker/undeal", methods=["DELETE"])
 def undeal():
     try:
         people_collection.update_many({}, {"$unset": {"hand": ""}})
         people_collection.update_many({}, {"$unset": {"betted": ""}})
         people_collection.update_many({}, {"$unset": {"won": ""}})
+        people_collection.update_many({}, {"$unset": {"show": ""}})
+        people_collection.update_many({}, {"$unset": {"score": ""}})
+        people_collection.update_many({}, {"$unset": {"score_str": ""}})
+
+
         board_collection.update_one({}, {"$unset": {"board_cards": ""}})
         board_collection.update_one({}, {"$unset": {"current_leader": ""}})
         board_collection.update_one({}, {"$unset": {"current": ""}})
@@ -201,6 +206,19 @@ def undeal():
         board_collection.update_one({}, {"$unset": {"current": ""}})
         board_collection.update_one({}, {"$unset": {"post_flop_leader": ""}})
         return jsonify("Successful undeal"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/poker/show/<string:person_id>", methods=["POST"])
+def show(person_id):
+    try:
+        current_show = people_collection.find_one({"_id": ObjectId(person_id)}).get("show", True)
+        new_show = not current_show
+        people_collection.update_one(
+            {"_id": ObjectId(person_id)},
+            {"$set": {"show": new_show}}
+        )
+        return jsonify("Successful show"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
