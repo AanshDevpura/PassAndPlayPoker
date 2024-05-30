@@ -207,12 +207,22 @@ def undeal():
 # Increment the game state (0:4 - preflop, flop, turn, river, end)
 def increment_game_state():
     try:
-        board_collection.update_one({}, {"$inc": {"game_state": 1}})
-        big_blind = board_collection.find_one().get("big_blind", 0)
-        board_collection.update_one({}, {"$set": {"min_raise": big_blind}})
-        people_collection.update_many({}, {"$set": {"can_raise": True}})
+        board = board_collection.find_one()
+        game_state = board.get("game_state", 0)
+        if game_state < 4:
+            board_collection.update_one({}, {"$inc": {"game_state": 1}})
+            big_blind = board.get("big_blind", 0)
+            board_collection.update_one({}, {"$set": {"min_raise": big_blind}})
+            people_collection.update_many({}, {"$set": {"can_raise": True}})
+            game_state += 1
+
+        # Check if game state is 4 and evaluate winner
+        if game_state == 4:
+            evaluate_winner()
+        
         return jsonify("Game state incremented"), 200
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
         return jsonify({"error": str(e)}), 500
 
 # Increment the current player
@@ -223,6 +233,7 @@ def increment_current():
         players_with_cards = [person for person in people if "hand" in person]
         if not players_with_cards or len(players_with_cards) == 1:
             board_collection.update_one({}, {"$set": {"game_state": 4}})
+            evaluate_winner()
             return jsonify("Game over"), 200
         players_with_moves = [person for person in people if person["dollars"] > 0 and "hand" in person]
         current = board_collection.find_one().get("current", -1)
@@ -233,6 +244,7 @@ def increment_current():
             if(current_leader == current):
                 if not players_with_moves or len(players_with_moves) == 1:
                     board_collection.update_one({}, {"$set": {"game_state": 4}})
+                    evaluate_winner()
                     return jsonify("Game over"), 200
                 increment_game_state()
                 current = board_collection.find_one().get("post_flop_leader", -1)
@@ -314,7 +326,6 @@ def get_board():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/poker/evaluate_winner", methods=["POST"])
 def evaluate_winner():
     try:
         board = board_collection.find_one()
@@ -355,6 +366,9 @@ def evaluate_winner():
                 for j in range(i, num_winners):
                     people_collection.update_one({"_id": winners[j]["_id"]}, {"$inc": {"dollars": win_per_winner}})
                     people_collection.update_one({"_id": winners[j]["_id"]}, {"$inc": {"won": win_per_winner}})
+        
+        board_collection.update_one({}, {"$set": {"pot": 0}})
+        board_collection.update_one({}, {"$set": {"current": -1}})
         return jsonify("Winner evaluated"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

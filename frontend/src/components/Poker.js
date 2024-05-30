@@ -30,7 +30,7 @@ function getPlayerPosition(index, totalPlayers) {
 
 function Poker({ people, setPeople}) {
   const [boardCards, setBoardCards] = useState([]);
-  const [gameState, setGameState] = useState(0);
+  const [gameState, setGameState] = useState(4);
   const [showHands, setShowHands] = useState([]);
   const [current, setCurrent] = useState(-1);
   const [betPerPerson, setBetPerPerson] = useState(0);
@@ -40,30 +40,6 @@ function Poker({ people, setPeople}) {
   const [dealer, setDealer] = useState(-1);
   const [smallBlindPlayer, setSmallBlindPLayer] = useState(-1);
   const [bigBlindPlayer, setBigBlindPlayer] = useState(-1);
-
-  useEffect(() => {
-    if (gameState === 4) {
-      handleEvaluateWinner();
-    }
-  }, [gameState]);
-  const handleEvaluateWinner = async () => {
-    try {
-      const response = await fetch('/poker/evaluate_winner', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      await fetchPeople(setPeople);
-      await getBoardVariables();
-      setShowHands(new Array(people.length).fill(true));
-    } catch (error) {
-      console.error('Error evaluating winner:', error);
-    }
-  };
 
   const getBoardVariables = async () => {
     try {
@@ -82,7 +58,10 @@ function Poker({ people, setPeople}) {
       setBetPerPerson(data.bet_per_person || 0);
       setCurrent(data.current || 0);
       setMinRaise(data.min_raise || 0);
-      setGameState(data.game_state || 0);
+      setGameState(data.game_state != null ? data.game_state : 4);
+      if (data.game_state === 4) {
+        setShowHands(new Array(people.length).fill(true));
+      }
       setDealer(data.dealer || 0);
       setSmallBlindPLayer(data.small_blind_player || 0);
       setBigBlindPlayer(data.big_blind_player || 0);
@@ -184,27 +163,6 @@ function Poker({ people, setPeople}) {
     }
   };
 
-  const handleUndeal = async () => {
-    try {
-      const response = await fetch('/poker/undeal', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      await fetchPeople(setPeople);
-      await getBoardVariables();
-      setDealer(-1);
-      setSmallBlindPLayer(-1);
-      setBigBlindPlayer(-1);
-    } catch (error) {
-      console.error('Error undealing:', error);
-    }
-  };
 
   const toggleShowHand = (index) => {
     if (index === current) {
@@ -218,13 +176,23 @@ function Poker({ people, setPeople}) {
 
   return (
     <div>
-      <button onClick={handleDeal} disabled={people.filter(person => person.dollars > 0).length < 2}>Deal </button>
-      <Link to="/">
-        <button>Edit Players</button>
-      </Link>
+      <div>
+      {gameState === 4 && (
+      <div>
+        <button
+          onClick={handleDeal}
+          disabled={people.filter(person => person.dollars > 0).length < 2}
+        >
+          Deal
+        </button>
+        <Link to="/">
+          <button>Edit Players</button>
+        </Link>
+      </div>
+    )}
+      </div>
       <div className="pot">Pot: ${pot}</div>
       <div className="gameState">Game State: {gameState}</div>
-      <div className="bigBlind">Min Raise: ${minRaise}</div>
       <div className="table">
         <div className="players">
           {people.map((person, index) => {
@@ -236,7 +204,9 @@ function Poker({ people, setPeople}) {
                   {index === smallBlindPlayer && <span className="poker-sb">SB</span>}
                   {index === bigBlindPlayer && <span className="poker-bb">BB</span>}
                   <span className="poker-name">{person.name}</span>
-                  <span className={`poker-dollars ${person.dollars === 0 ? 'zero-dollars' : ''}`}>${person.dollars}</span>
+                  <span className={`poker-dollars ${person.dollars === 0 ? 'zero-dollars' : ''}`}>
+                    ${person.dollars.toFixed(2)}
+                  </span>
                 </div>
 
                 {person.hand && (
