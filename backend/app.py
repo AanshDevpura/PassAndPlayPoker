@@ -5,7 +5,7 @@ from pymongo import MongoClient
 from bson import ObjectId, errors
 import certifi
 import random
-from end import compare_hands
+from end import Deck, best_value, value_to_str
 
 # Connect to MongoDB cluster
 cluster = MongoClient(
@@ -106,13 +106,6 @@ def get_big_blind():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Simulate a deck of cards
-class Deck:
-    def __init__(self):
-        self.cards = [f'{rank}{suit}' for suit in 'shdc' for rank in '23456789TJQKA']
-        random.shuffle(self.cards)
-    def deal_card(self):
-        return self.cards.pop(0)
 
 # Deal 2 cards to each player with money and deal board cards
 # Initialize a lot of game variables
@@ -128,6 +121,9 @@ def deal():
         
         people_collection.update_many({}, {"$set": {"betted": 0}})
         people_collection.update_many({}, {"$set": {"can_raise": True}})
+        people_collection.update_many({}, {"$set": {"won": 0}})
+        people_collection.update_many({}, {"$set": {"score": 0}})
+        people_collection.update_many({}, {"$set": {"score_str": ""}})
 
         board_cards = [deck.deal_card() for _ in range(5)]
         board_collection.update_one({}, {"$set": {"board_cards": board_cards}}, upsert=True)
@@ -190,6 +186,7 @@ def undeal():
     try:
         people_collection.update_many({}, {"$unset": {"hand": ""}})
         people_collection.update_many({}, {"$unset": {"betted": ""}})
+        people_collection.update_many({}, {"$unset": {"won": ""}})
         board_collection.update_one({}, {"$unset": {"board_cards": ""}})
         board_collection.update_one({}, {"$unset": {"current_leader": ""}})
         board_collection.update_one({}, {"$unset": {"current": ""}})
@@ -262,8 +259,7 @@ def raise_dollars(person_id):
             board_collection.update_one({}, {"$inc": {"pot": amount}})
             current = board_collection.find_one().get("current", -1)
             board_collection.update_one({}, {"$set": {"current_leader": current}})
-            bet_per_person = person.get("betted", 0) + amount
-            board_collection.update_one({}, {"$set": {"bet_per_person": bet_per_person}})
+            board_collection.update_one({}, {"$inc": {"bet_per_person": amount}})
             min_raise = board_collection.find_one().get("min_raise", 0)
             if original_amount >= min_raise:
                 board_collection.update_one({}, {"$set": {"min_raise": amount}})
@@ -320,24 +316,34 @@ def get_board():
 
 @app.route("/poker/evaluate_winner", methods=["POST"])
 def evaluate_winner():
+    try:
+        board = board_collection.find_one()
+        board_cards = board.get("board_cards", [])
+        pot = board.get("pot", 0)
+
+        people_with_cards = list(people_collection.find({"hand": {"$exists": True}}))
+        people_values = []
+        for person in people_with_cards:
+            person_value = best_value(person["hand"] + board_cards)
+            people_values.append(person_value)
+            people_collection.update_one({"_id": person["_id"]}, {"$set": {"score": person_value}})
+            people_collection.update_one({"_id": person["_id"]}, {"$set": {"score_str": value_to_str(person_value)}})
+       
         people = list(people_collection.find())
         people_with_cards = [person for person in people if "hand" in person]
-        board = board_collection.find_one()
-        if not board:
-            return jsonify({"error": "Board not found"}), 404
-        if board.get("game_state", 0) < 4:
-            return jsonify({"error": "Game not over"}), 400
-        if not people_with_cards:
-            return jsonify({"error": "No players with cards"}), 400
-        board_cards = board.get("board_cards", [])
-        if len(board_cards) != 5:
-            return jsonify({"error": "Board not complete"}), 400
-        pot = board.get("pot", 0)
-        while pot > 0 and people_with_cards:
-            winner_idxs = compare_hands(people_with_cards, board_cards)
-            winners = [people_with_cards[i] for i in winner_idxs]
+
+        while pot > 0:
+            winners = []
+            best_score = max(people_values)
+            for i, person in enumerate(people_with_cards):
+                if person.get("score") == best_score:
+                    winners.append(person)
+                    person["score"] = 0
+                    people_values[i] = 0
             winners.sort(key=lambda x: x["betted"])
-            for winner in winners:
+            num_winners = len(winners)
+            for i in range(num_winners):
+                winner = winners[i]
                 winner_betted = winner.get("betted", 0)
                 winning_amount = 0
                 for person in people:
@@ -345,11 +351,13 @@ def evaluate_winner():
                     person["betted"] = person.get("betted", 0) - money_won_from_person
                     pot -= money_won_from_person
                     winning_amount += money_won_from_person
-                for winner in winners:
-                    people_collection.update_one({"_id": winner["_id"]}, {"$inc": {"dollars": winning_amount / len(winners)}})
-            for idx in sorted(winner_idxs, reverse=True):
-                people_with_cards.pop(idx)
+                win_per_winner = winning_amount / (num_winners - i)
+                for j in range(i, num_winners):
+                    people_collection.update_one({"_id": winners[j]["_id"]}, {"$inc": {"dollars": win_per_winner}})
+                    people_collection.update_one({"_id": winners[j]["_id"]}, {"$inc": {"won": win_per_winner}})
         return jsonify("Winner evaluated"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 if __name__ == "__main__":
     app.run(debug=True)
 

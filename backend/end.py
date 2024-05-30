@@ -16,6 +16,29 @@ card_values = {
     'K': 11,
     'A': 12
 }
+
+reverse_card_values = {v: k for k, v in card_values.items()}
+
+hand_type_dict = {
+    9: "Royal Flush",
+    8: "Straight Flush",
+    7: "Four of a Kind",
+    6: "Full House",
+    5: "Flush",
+    4: "Straight",
+    3: "Three of a Kind",
+    2: "Two Pair",
+    1: "One Pair",
+    0: "High Card"
+}
+
+class Deck:
+    def __init__(self):
+        self.cards = [f'{rank}{suit}' for suit in 'shdc' for rank in '23456789TJQKA']
+        random.shuffle(self.cards)
+    def deal_card(self):
+        return self.cards.pop(0)
+
 def is_flush(suits):
     return len(set(suits)) == 1
 
@@ -30,10 +53,12 @@ def hand_value(hand):
 
     flush = is_flush(suits)
     straight = is_straight(ranks)
-
-    #royal/straight flush
+    #royal and straight flush
     if(flush and straight):
-         #special case for A,2,3,4,5
+        #royal flush
+        if ranks == [12, 11, 10, 9, 8]:
+            return (9 << 20)
+        #special case for A,2,3,4,5
         if ranks == [12, 3, 2, 1, 0]:
             return (8 << 20) + 3
         return (8 << 20) + ranks[0]
@@ -80,15 +105,28 @@ def best_value(seven_hand):
         best = max(best, hand_value(five_hand))
     return best
 
-def compare_hands(people, board):
-    best_idx = None
-    best_score = float('-inf')
-    seven_hand = [person["hand"] + board for person in people]
-    for i in range(len(seven_hand)):
-        score = best_value(seven_hand[i])
-        if score > best_score:
-            best_score = score
-            best_idx = [i]
-        elif score == best_score:
-            best_idx.append(i)
-    return best_idx
+
+def value_to_str(value):
+    hand_type = value >> 20
+    hand_values = [reverse_card_values[(value >> (4 * i)) & 15] for i in range(5)]
+
+    if hand_type == 9:
+        return hand_type_dict[hand_type]
+    if hand_type == 8:
+        return f"Straight Flush: {hand_values[0]} high"
+    if hand_type == 7:
+        return f"Four of a Kind: {hand_values[1]}s with {hand_values[0]} kicker"
+    if hand_type == 6:
+        return f"Full House: {hand_values[1]}s over {hand_values[0]}s"
+    if hand_type == 5:
+        return f"Flush: {hand_values[4]}, {hand_values[3]}, {hand_values[2]}, {hand_values[1]},and {hand_values[0]}"
+    if hand_type == 4:
+        return f"Straight: {hand_values[0]} high"
+    if hand_type == 3:
+        return f"Three of a Kind: {hand_values[2]}s with {hand_values[1]} and {hand_values[0]} kickers"
+    if hand_type == 2:
+        return f"Two Pair: {hand_values[2]}s and {hand_values[1]}s with {hand_values[0]} kicker"
+    if hand_type == 1:
+        return f"One Pair: {hand_values[3]}s with {hand_values[2]}, {hand_values[1]}, and {hand_values[0]} kickers"
+    if hand_type == 0:
+        return f"High Card: {hand_values[4]}, {hand_values[3]}, {hand_values[2]}, {hand_values[1]},and {hand_values[0]}"

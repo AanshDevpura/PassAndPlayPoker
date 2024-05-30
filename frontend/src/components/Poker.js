@@ -32,7 +32,7 @@ function Poker({ people, setPeople}) {
   const [boardCards, setBoardCards] = useState([]);
   const [gameState, setGameState] = useState(0);
   const [showHands, setShowHands] = useState([]);
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(-1);
   const [betPerPerson, setBetPerPerson] = useState(0);
   const [pot, setPot] = useState(0);
   const [minRaise, setMinRaise] = useState(0);
