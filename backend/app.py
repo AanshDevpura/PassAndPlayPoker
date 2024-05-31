@@ -182,6 +182,7 @@ def deal():
         return jsonify({"error": str(e)}), 500
 
 # Undeal all cards and reset the game variables
+@app.route("/poker/undeal", methods=["POST"])
 def undeal():
     try:
         people_collection.update_many({}, {"$unset": {"hand": ""}})
@@ -227,15 +228,15 @@ def increment_game_state():
     try:
         board = board_collection.find_one()
         game_state = board.get("game_state", 0)
-        if game_state < 4:
-            board_collection.update_one({}, {"$inc": {"game_state": 1}})
-            big_blind = board.get("big_blind", 0)
-            board_collection.update_one({}, {"$set": {"min_raise": big_blind}})
-            people_collection.update_many({}, {"$set": {"can_raise": True}})
-            game_state += 1
+        board_collection.update_one({}, {"$inc": {"game_state": 1}})
+        big_blind = board.get("big_blind", 0)
+        board_collection.update_one({}, {"$set": {"min_raise": big_blind}})
+        people_collection.update_many({}, {"$set": {"can_raise": True}})
+        game_state += 1
 
         # Check if game state is 4 and evaluate winner
         if game_state == 4:
+            people_collection.update_many({}, {"$set": {"show": True}})
             evaluate_winner()
         
         return jsonify("Game state incremented"), 200
@@ -248,9 +249,9 @@ def increment_game_state():
 def increment_current():
     try:
         people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
+        people_collection.update_many({}, {"$set": {"show": False}})
         players_with_cards = [person for person in people if "hand" in person]
         if not players_with_cards or len(players_with_cards) == 1:
-            board_collection.update_one({}, {"$set": {"game_state": 4}})
             evaluate_winner()
             return jsonify("Game over"), 200
         players_with_moves = [person for person in people if person["dollars"] > 0 and "hand" in person]
@@ -262,6 +263,7 @@ def increment_current():
             if(current_leader == current):
                 if not players_with_moves or len(players_with_moves) == 1:
                     board_collection.update_one({}, {"$set": {"game_state": 4}})
+                    people_collection.update_many({}, {"$set": {"show": True}})
                     evaluate_winner()
                     return jsonify("Game over"), 200
                 increment_game_state()
@@ -283,20 +285,20 @@ def raise_dollars(person_id):
         original_amount = float(request.json.get("amount"))
         person = people_collection.find_one({"_id": ObjectId(person_id)})
         if person:
-            amount = original_amount + board_collection.find_one().get("bet_per_person", 0) - person.get("betted", 0)
-            people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"dollars": -amount}})
-            people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"betted": amount}})
-            board_collection.update_one({}, {"$inc": {"pot": amount}})
+            new_amount = original_amount + board_collection.find_one().get("bet_per_person", 0) - person.get("betted", 0)
+            people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"dollars": -new_amount}})
+            people_collection.update_one({"_id": ObjectId(person_id)}, {"$inc": {"betted": new_amount}})
+            board_collection.update_one({}, {"$inc": {"pot": new_amount}})
             current = board_collection.find_one().get("current", -1)
             board_collection.update_one({}, {"$set": {"current_leader": current}})
-            board_collection.update_one({}, {"$inc": {"bet_per_person": amount}})
+            board_collection.update_one({}, {"$inc": {"bet_per_person": original_amount}})
             min_raise = board_collection.find_one().get("min_raise", 0)
             if original_amount >= min_raise:
-                board_collection.update_one({}, {"$set": {"min_raise": amount}})
+                board_collection.update_one({}, {"$set": {"min_raise": original_amount}})
                 people_collection.update_many({}, {"$set": {"can_raise": True}})
                 people_collection.update_one({"_id": ObjectId(person_id)}, {"$set": {"can_raise": False}})
             increment_current()
-            return jsonify(amount), 200
+            return jsonify(original_amount), 200
         else:
             return jsonify({"error": "Person not found"}), 500
     except Exception as e:

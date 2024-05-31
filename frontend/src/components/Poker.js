@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { fetchPeople} from './Api';
 import './Poker.css';
+import { useNavigate } from 'react-router-dom';
 
 function getPlayerPosition(index, totalPlayers) {
   const width = window.innerWidth - 300;
@@ -30,7 +30,7 @@ function getPlayerPosition(index, totalPlayers) {
 
 function Poker({ people, setPeople}) {
   const [boardCards, setBoardCards] = useState([]);
-  const [gameState, setGameState] = useState(4);
+  const [gameState, setGameState] = useState(0);
   const [current, setCurrent] = useState(-1);
   const [betPerPerson, setBetPerPerson] = useState(0);
   const [pot, setPot] = useState(0);
@@ -39,6 +39,7 @@ function Poker({ people, setPeople}) {
   const [dealer, setDealer] = useState(-1);
   const [smallBlindPlayer, setSmallBlindPLayer] = useState(-1);
   const [bigBlindPlayer, setBigBlindPlayer] = useState(-1);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPeople(setPeople);
@@ -61,10 +62,10 @@ function Poker({ people, setPeople}) {
       setBetPerPerson(data.bet_per_person || 0);
       setCurrent(data.current || 0);
       setMinRaise(data.min_raise || 0);
-      setGameState(data.game_state != null ? data.game_state : 4);
-      setDealer(data.dealer || 0);
-      setSmallBlindPLayer(data.small_blind_player || 0);
-      setBigBlindPlayer(data.big_blind_player || 0);
+      setGameState(data.game_state || 0);
+      setDealer(data.dealer != null ? data.dealer : -1);
+      setSmallBlindPLayer(data.small_blind_player != null ? data.small_blind_player : -1);
+      setBigBlindPlayer(data.big_blind_player != null ? data.big_blind_player : -1);
       setRaise('');
     }
     catch (error) {
@@ -201,10 +202,15 @@ function Poker({ people, setPeople}) {
     }
   };
 
+  const handleEditPlayers = async () => {
+    await handleUndeal();
+    navigate('/');
+  };
+
   return (
     <div>
       <div>
-      {gameState === 4 && (
+      {pot === 0 && (
       <div>
         <button
           onClick={handleDeal}
@@ -212,14 +218,13 @@ function Poker({ people, setPeople}) {
         >
           Deal
         </button>
-        <Link to="/">
-          <button>Edit Players</button>
-        </Link>
+          <button
+          onClick = {handleEditPlayers}
+          >Edit Players</button>
       </div>
     )}
       </div>
       <div className="pot">Pot: ${pot}</div>
-      <div className="gameState">Game State: {gameState}</div>
       <div className="table">
         <div className="players">
           {people.map((person, index) => {
