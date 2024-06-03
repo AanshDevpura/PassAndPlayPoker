@@ -39,12 +39,27 @@ function Poker({ people, setPeople}) {
   const [dealer, setDealer] = useState(-1);
   const [smallBlindPlayer, setSmallBlindPLayer] = useState(-1);
   const [bigBlindPlayer, setBigBlindPlayer] = useState(-1);
+  const [playerPositions, setPlayerPositions] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPeople(setPeople);
     getBoardVariables();
   }, [setPeople]);
+
+  const updatePlayerPositions = () => {
+    setPlayerPositions(people.map((_, index) => getPlayerPosition(index, people.length)));
+  };
+
+  useEffect(() => {
+    updatePlayerPositions();
+    window.addEventListener('resize', updatePlayerPositions);
+    return () => {
+      window.removeEventListener('resize', updatePlayerPositions);
+    };
+  }, [people]);
+
+  
   const getBoardVariables = async () => {
     try {
       const response = await fetch('/poker/board', {
@@ -100,8 +115,8 @@ function Poker({ people, setPeople}) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      await fetchPeople(setPeople);
-      await getBoardVariables();
+      fetchPeople(setPeople);
+      getBoardVariables();
     } catch (error) {
       console.error('Error raising:', error);
     }
@@ -118,8 +133,8 @@ function Poker({ people, setPeople}) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      await fetchPeople(setPeople);
-      await getBoardVariables();
+      fetchPeople(setPeople);
+      getBoardVariables();
     } catch (error) {
       console.error('Error calling:', error);
     }
@@ -136,8 +151,8 @@ function Poker({ people, setPeople}) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      await fetchPeople(setPeople);
-      await getBoardVariables();
+      fetchPeople(setPeople);
+      getBoardVariables();
     } catch (error) {
       console.error('Error folding:', error);
     }
@@ -155,8 +170,8 @@ function Poker({ people, setPeople}) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      await fetchPeople(setPeople);
-      await getBoardVariables();
+      fetchPeople(setPeople);
+      getBoardVariables();
     } catch (error) {
       console.error('Error dealing:', error);
     }
@@ -173,8 +188,8 @@ function Poker({ people, setPeople}) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      await fetchPeople(setPeople);
-      await getBoardVariables();
+      fetchPeople(setPeople);
+      getBoardVariables();
     } catch (error) {
       console.error('Error undealing:', error);
     }
@@ -196,7 +211,7 @@ function Poker({ people, setPeople}) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      await fetchPeople(setPeople);
+      fetchPeople(setPeople);
     } catch (error) {
       console.error('Error showing hand:', error);
     }
@@ -228,7 +243,7 @@ function Poker({ people, setPeople}) {
       <div className="table">
         <div className="players">
           {people.map((person, index) => {
-            const playerPosition = getPlayerPosition(index, people.length);
+            const playerPosition = playerPositions[index] || { x: 0, y: 0 };
             return (
               <div className="outer-player-container" style={{ top: playerPosition.y, left: playerPosition.x }} key={index}>
                 <div className="player-info-container">
@@ -240,9 +255,9 @@ function Poker({ people, setPeople}) {
                     ${person.dollars.toFixed(2)}
                   </span>
                 </div>
-
                 {person.hand && (
                   <div>
+                    {person.show && person.score_str && <span className="poker-score_str">{person.score_str}</span>}
                     <div className="player-cards" onClick={() => toggleShowHand(index, person._id)}>
                       {person.show ? (
                         <div>

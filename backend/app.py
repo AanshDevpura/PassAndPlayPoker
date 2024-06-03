@@ -137,14 +137,13 @@ def deal():
         # Get the dealer, small blind, big blind, preflop leader, and postflop leader for the round
         people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
         valid_players = [person for person in people if person["dollars"] > 0]
-        valid_players_count = len(valid_players)
         
         dealer = (board_collection.find_one().get("dealer", -1) + 1) % len(people)
         while people[dealer]["dollars"] == 0:
             dealer = (dealer + 1) % len(people)
         board_collection.update_one({}, {"$set": {"dealer": dealer}}, upsert=True)
 
-        if valid_players_count == 2:
+        if len(valid_players) == 2:
             small_blind = dealer
         else:
             small_blind = (dealer + 1) % len(people)
@@ -156,14 +155,8 @@ def deal():
         while people[big_blind]["dollars"] == 0:
             big_blind = (big_blind + 1) % len(people)
         board_collection.update_one({}, {"$set": {"big_blind_player": big_blind}}, upsert=True)
-        pre_flop_leader = (big_blind + 1) % len(people)
-        while people[pre_flop_leader]["dollars"] == 0:
-            pre_flop_leader = (pre_flop_leader + 1) % len(people)
-        board_collection.update_one({}, {"$set": {"current_leader": pre_flop_leader}}, upsert=True)
-        board_collection.update_one({}, {"$set": {"current": pre_flop_leader}}, upsert=True)
-        post_flop_leader = big_blind if valid_players_count == 2 else small_blind
-        board_collection.update_one({}, {"$set": {"post_flop_leader": post_flop_leader}}, upsert=True)
 
+        # Pay the small blind and big blind
         big_blind_value = board_collection.find_one().get("big_blind", 0)
         small_blind_pays = min(people[small_blind]["dollars"], big_blind_value / 2)
         people_collection.update_one({"_id": people[small_blind]["_id"]}, {"$inc": {"dollars": -small_blind_pays}})
@@ -176,6 +169,23 @@ def deal():
         board_collection.update_one({}, {"$inc": {"pot": big_blind_pays}})
 
         board_collection.update_one({}, {"$inc": {"bet_per_person": big_blind_value}})
+
+        people = list(people_collection.find().sort("_id", pymongo.ASCENDING))
+        # Case for when only no moves left due to blinds
+        new_valid_players = [person for person in people if person["dollars"] > 0]
+        if not new_valid_players or (len(new_valid_players) == 1 and new_valid_players[0]["betted"] == big_blind_value):
+            board_collection.update_one({}, {"$set": {"game_state": 4}})
+            people_collection.update_many({}, {"$set": {"show": True}})
+            evaluate_winner()
+            return jsonify("Game over"), 200
+        pre_flop_leader = (big_blind + 1) % len(people)
+        while people[pre_flop_leader]["dollars"] == 0:
+            pre_flop_leader = (pre_flop_leader + 1) % len(people)
+        board_collection.update_one({}, {"$set": {"current_leader": pre_flop_leader}}, upsert=True)
+        board_collection.update_one({}, {"$set": {"current": pre_flop_leader}}, upsert=True)
+        post_flop_leader = big_blind if len(valid_players) == 2 else small_blind
+        board_collection.update_one({}, {"$set": {"post_flop_leader": post_flop_leader}}, upsert=True)
+
 
         return jsonify("Successful deal"), 200
     except Exception as e:
