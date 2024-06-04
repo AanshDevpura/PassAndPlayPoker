@@ -130,7 +130,7 @@ def value_to_str(value):
         return f"High Card: {hand_values[4]}, {hand_values[3]}, {hand_values[2]}, {hand_values[1]},and {hand_values[0]}"
 
 
-def calculate_percentile(hole_cards, community_cards, opponent_count):
+def win_chance(hole_cards, community_cards, opponent_count):
     deck = Deck()
     # Remove known cards from the deck
     for card in hole_cards + community_cards:
