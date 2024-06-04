@@ -1,6 +1,7 @@
 from collections import Counter
 from itertools import combinations
 import random
+
 card_values = {
     '2': 0,
     '3': 1,
@@ -53,8 +54,7 @@ def hand_value(hand):
 
     flush = is_flush(suits)
     straight = is_straight(ranks)
-    #royal and straight flush
-    if(flush and straight):
+    if(straight and flush):
         #royal flush
         if ranks == [12, 11, 10, 9, 8]:
             return (9 << 20)
@@ -73,11 +73,9 @@ def hand_value(hand):
     if most_common[0][1] == 3 and most_common[1][1] == 2:
         return (6 << 20) + (most_common[0][0] << 4) + most_common[1][0]
         
-    #flush
     if flush:
         return (5 << 20) + (ranks[0] << 16) + (ranks[1] << 12) + (ranks[2] << 8) + (ranks[3] << 4) + ranks[4]
         
-    #straight
     if straight:
         #special case for A,2,3,4,5
         if ranks == [12, 3, 2, 1, 0]:
@@ -130,3 +128,33 @@ def value_to_str(value):
         return f"One Pair: {hand_values[3]}s with {hand_values[2]}, {hand_values[1]}, and {hand_values[0]} kickers"
     if hand_type == 0:
         return f"High Card: {hand_values[4]}, {hand_values[3]}, {hand_values[2]}, {hand_values[1]},and {hand_values[0]}"
+
+
+def calculate_percentile(hole_cards, community_cards, opponent_count):
+    deck = Deck()
+    # Remove known cards from the deck
+    for card in hole_cards + community_cards:
+        deck.cards.remove(card)
+    
+    wins = 0
+    total = 0
+    max_combinations = 10000 // opponent_count
+    
+    for i in range(max_combinations):
+        remaining_community_cards = [deck.cards.pop(random.randint(0, len(deck.cards) - 1)) for _ in range(5 - len(community_cards))]
+        opponents_hole_cards = [[deck.cards.pop(random.randint(0, len(deck.cards) - 1)) for _ in range(2)] for _ in range(opponent_count)]
+        opponents_all_cards = [opponent_cards + community_cards + remaining_community_cards for opponent_cards in opponents_hole_cards]
+        best_opponent = float('-inf')
+        for opponent in opponents_all_cards:
+            best_opponent = max(best_opponent, best_value(opponent))
+        player_all_cards = hole_cards + community_cards + remaining_community_cards
+        player_value = best_value(player_all_cards)
+
+        if player_value >= best_opponent:
+            wins += 1
+        for card in remaining_community_cards:
+            deck.cards.append(card)
+        for opponent_cards in opponents_hole_cards:
+            for card in opponent_cards:
+                deck.cards.append(card)
+    return wins / max_combinations

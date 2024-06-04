@@ -5,7 +5,7 @@ from pymongo import MongoClient
 from bson import ObjectId, errors
 import certifi
 import random
-from end import Deck, best_value, value_to_str
+from poker import Deck, best_value, value_to_str
 
 # Connect to MongoDB cluster
 cluster = MongoClient(

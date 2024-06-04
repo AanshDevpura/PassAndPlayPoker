@@ -47,18 +47,34 @@ function Poker({ people, setPeople}) {
     getBoardVariables();
   }, [setPeople]);
 
-  const updatePlayerPositions = () => {
-    setPlayerPositions(people.map((_, index) => getPlayerPosition(index, people.length)));
-  };
-
   useEffect(() => {
+    const updatePlayerPositions = () => {
+      setPlayerPositions(people.map((_, index) => getPlayerPosition(index, people.length)));
+    };
     updatePlayerPositions();
     window.addEventListener('resize', updatePlayerPositions);
     return () => {
       window.removeEventListener('resize', updatePlayerPositions);
     };
   }, [people]);
+  
+  //prevent the back button from working
+  useEffect(() => {
+    const handlePopState = (event) => {
+      const confirmExit = window.confirm("Are you sure you want to exit the game? You will lose your progress.");
+      if (confirmExit) {
+        handleEditPlayers();
+      } else {
+        window.history.pushState(null, document.title, window.location.href);
+      }
+    };
 
+    window.history.pushState(null, document.title, window.location.href);
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]);
   
   const getBoardVariables = async () => {
     try {

@@ -134,7 +134,7 @@ const Start = ({ people, setPeople}) => {
   };
 
   const handleBlindChange = (e) => {
-    if (e.target.value < 0) {
+    if (e.target.value <= 0) {
       setBigBlind('')
       alert("Please enter a positive number for Big Blind.");
     } else {
