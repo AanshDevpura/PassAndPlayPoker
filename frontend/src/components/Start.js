@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./Start.css";
 import NamesList from "./NamesList";
 import NamesForm from "./NamesForm";
@@ -9,7 +9,15 @@ const Start = ({ people, setPeople }) => {
   const [newPerson, setNewPerson] = useState({ name: "", dollars: "" });
   const [bigBlind, setBigBlind] = useState("");
   const [editIndex, setEditIndex] = useState(null);
+  const handleUndealCalled = useRef(false);
   const navigate = useNavigate();
+  useEffect(() => {
+    //prevent handleUndeal from being called multiple times
+    if (!handleUndealCalled.current) {
+      handleUndeal();
+      handleUndealCalled.current = true;
+    }
+  }, []);
 
   useEffect(() => {
     fetchPeople(setPeople);
@@ -18,6 +26,23 @@ const Start = ({ people, setPeople }) => {
   useEffect(() => {
     fetchBigBlind(setBigBlind);
   }, [setBigBlind]);
+
+  const handleUndeal = async () => {
+    try {
+      const response = await fetch("/poker/undeal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      fetchPeople(setPeople);
+    } catch (error) {
+      console.error("Error undealing:", error);
+    }
+  };
 
   const handleAddPerson = async () => {
     if (people.length >= 10) {
@@ -140,6 +165,9 @@ const Start = ({ people, setPeople }) => {
     if (e.target.value < 0) {
       setBigBlind("");
       alert("Please enter a positive number for Big Blind.");
+    } else if (e.target.value > 1000000) {
+      setBigBlind("1000000");
+      alert("The number cannot be greater than 1,000,000 dollars.");
     } else {
       setBigBlind(e.target.value);
     }

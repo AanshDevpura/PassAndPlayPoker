@@ -12,6 +12,9 @@ const NamesForm = ({
     if (e.target.value < 0) {
       setNewPerson({ ...newPerson, dollars: "" });
       alert("Please enter a positive number for dollars.");
+    } else if (e.target.value > 1000000) {
+      setNewPerson({ ...newPerson, dollars: "1000000" });
+      alert("The number cannot be greater than 1,000,000 dollars.");
     } else {
       setNewPerson({ ...newPerson, dollars: e.target.value });
     }
@@ -26,14 +29,13 @@ const NamesForm = ({
         placeholder="Name"
         value={newPerson.name}
         onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })}
+        maxLength="20"
       />
       <input
         className="names-form-input"
         type="number"
         name="dollars"
         placeholder="Dollars"
-        min="0"
-        step="10"
         value={newPerson.dollars}
         onChange={handleDollarsChange}
       />

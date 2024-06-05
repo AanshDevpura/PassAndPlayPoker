@@ -48,7 +48,19 @@ function Poker({ people, setPeople }) {
     getBoardVariables();
   }, [setPeople]);
 
-  //prevent the back button from working
+  useEffect(() => {
+    const updatePlayerPositions = () => {
+      setPlayerPositions(
+        people.map((_, index) => getPlayerPosition(index, people.length))
+      );
+    };
+    updatePlayerPositions();
+    window.addEventListener("resize", updatePlayerPositions);
+    return () => {
+      window.removeEventListener("resize", updatePlayerPositions);
+    };
+  }, [people]);
+
   useEffect(() => {
     const handlePopState = (event) => {
       const confirmExit = window.confirm(
@@ -67,19 +79,6 @@ function Poker({ people, setPeople }) {
       window.removeEventListener("popstate", handlePopState);
     };
   }, [navigate]);
-
-  useEffect(() => {
-    const updatePlayerPositions = () => {
-      setPlayerPositions(
-        people.map((_, index) => getPlayerPosition(index, people.length))
-      );
-    };
-    updatePlayerPositions();
-    window.addEventListener("resize", updatePlayerPositions);
-    return () => {
-      window.removeEventListener("resize", updatePlayerPositions);
-    };
-  }, [people]);
 
   const getBoardVariables = async () => {
     try {
@@ -214,24 +213,6 @@ function Poker({ people, setPeople }) {
     }
   };
 
-  const handleUndeal = async () => {
-    try {
-      const response = await fetch("/poker/undeal", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      fetchPeople(setPeople);
-      getBoardVariables();
-    } catch (error) {
-      console.error("Error undealing:", error);
-    }
-  };
-
   const toggleShowHand = async (index, personId) => {
     if (index !== current) {
       return;
@@ -254,7 +235,6 @@ function Poker({ people, setPeople }) {
   };
 
   const handleEditPlayers = async () => {
-    await handleUndeal();
     navigate("/");
   };
 
