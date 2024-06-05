@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import './Start.css';
-import NamesList from './NamesList';
-import NamesForm from './NamesForm';
-import { fetchPeople } from './Api';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import "./Start.css";
+import NamesList from "./NamesList";
+import NamesForm from "./NamesForm";
+import { fetchPeople } from "./Api";
+import { useNavigate } from "react-router-dom";
 
-const Start = ({ people, setPeople}) => {
-  const [newPerson, setNewPerson] = useState({ name: '', dollars: '' });
-  const [bigBlind, setBigBlind] = useState('');
+const Start = ({ people, setPeople }) => {
+  const [newPerson, setNewPerson] = useState({ name: "", dollars: "" });
+  const [bigBlind, setBigBlind] = useState("");
   const [editIndex, setEditIndex] = useState(null);
   const navigate = useNavigate();
 
@@ -18,36 +18,35 @@ const Start = ({ people, setPeople}) => {
   useEffect(() => {
     fetchBigBlind(setBigBlind);
   }, [setBigBlind]);
-  
-  
+
   const handleAddPerson = async () => {
     if (people.length >= 10) {
-      alert('Cannot add more than 10 people');
+      alert("Cannot add more than 10 people");
       return;
     }
-    if (newPerson.name.trim() === '' || newPerson.dollars.trim() === '') {
-      alert('Name and dollar amount are required');
+    if (newPerson.name.trim() === "" || newPerson.dollars.trim() === "") {
+      alert("Name and dollar amount are required");
       return;
     }
-    if (people.some(person => person.name === newPerson.name)) {
-      alert('Name already exists');
+    if (people.some((person) => person.name === newPerson.name)) {
+      alert("Name already exists");
       return;
     }
     try {
-      const response = await fetch('/people', {
-        method: 'POST',
+      const response = await fetch("/people", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(newPerson),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      setNewPerson({ ...newPerson, name: '' });
+      setNewPerson({ ...newPerson, name: "" });
       fetchPeople(setPeople);
     } catch (error) {
-      console.error('Error adding person:', error);
+      console.error("Error adding person:", error);
     }
   };
 
@@ -57,88 +56,92 @@ const Start = ({ people, setPeople}) => {
   };
 
   const handleUpdatePerson = async () => {
-    if (newPerson.name.trim() === '' || newPerson.dollars.trim() === '') {
-      alert('Name and dollar amount are required');
+    if (newPerson.name.trim() === "" || newPerson.dollars.trim() === "") {
+      alert("Name and dollar amount are required");
       return;
     }
-    if (people.some(person => person.name === newPerson.name && person._id !== editIndex)) {
-      alert('Name already exists');
+    if (
+      people.some(
+        (person) => person.name === newPerson.name && person._id !== editIndex
+      )
+    ) {
+      alert("Name already exists");
       return;
     }
     try {
       const response = await fetch(`/people/${editIndex}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(newPerson),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      setNewPerson({ ...newPerson, name: '' });
+      setNewPerson({ ...newPerson, name: "" });
       setEditIndex(null);
       fetchPeople(setPeople);
     } catch (error) {
-      console.error('Error updating person:', error);
+      console.error("Error updating person:", error);
     }
   };
 
   const handleDeletePerson = async (personId) => {
     try {
       const response = await fetch(`/people/${personId}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       fetchPeople(setPeople);
     } catch (error) {
-      console.error('Error deleting person:', error);
+      console.error("Error deleting person:", error);
     }
   };
 
   const handleBigBlind = async () => {
     try {
-      const response = await fetch('/poker/big_blind', {
-        method: 'POST',
+      const response = await fetch("/poker/big_blind", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({bigBlind}),
+        body: JSON.stringify({ bigBlind }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error setting big blind:', error);
+      console.error("Error setting big blind:", error);
     }
   };
-  
+
   const fetchBigBlind = async (setBigBlind) => {
     try {
-      const response = await fetch('/poker/big_blind');
+      const response = await fetch("/poker/big_blind");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       setBigBlind(data);
     } catch (error) {
-      console.error('Error fetching big blind:', error);
+      console.error("Error fetching big blind:", error);
     }
-  }
+  };
 
   const handlePlayPoker = async () => {
     await handleBigBlind();
-    navigate('/poker');
+    navigate("/poker");
   };
 
   const handleBlindChange = (e) => {
-    if (e.target.value <= 0) {
-      setBigBlind('')
+    if (e.target.value < 0) {
+      setBigBlind("");
       alert("Please enter a positive number for Big Blind.");
     } else {
-      setBigBlind(e.target.value)
+      setBigBlind(e.target.value);
     }
   };
 
@@ -154,7 +157,7 @@ const Start = ({ people, setPeople}) => {
       />
       <NamesList
         people={people}
-        handleEditPerson={handleEditPerson} 
+        handleEditPerson={handleEditPerson}
         handleDeletePerson={handleDeletePerson}
         editIndex={editIndex}
       />
@@ -164,8 +167,6 @@ const Start = ({ people, setPeople}) => {
           type="number"
           name="Big Blind"
           placeholder="Big Blind"
-          min="0"
-          step="0.2"
           value={bigBlind}
           onChange={handleBlindChange}
         />

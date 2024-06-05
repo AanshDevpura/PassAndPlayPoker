@@ -1,11 +1,16 @@
-import React from 'react';
-import './NamesForm.css';
+import React from "react";
+import "./NamesForm.css";
 
-const NamesForm = ({ newPerson, setNewPerson, handleAddPerson, handleUpdatePerson, editIndex }) => {
-  
+const NamesForm = ({
+  newPerson,
+  setNewPerson,
+  handleAddPerson,
+  handleUpdatePerson,
+  editIndex,
+}) => {
   const handleDollarsChange = (e) => {
     if (e.target.value < 0) {
-      setNewPerson({ ...newPerson, dollars: '' });
+      setNewPerson({ ...newPerson, dollars: "" });
       alert("Please enter a positive number for dollars.");
     } else {
       setNewPerson({ ...newPerson, dollars: e.target.value });
@@ -15,7 +20,7 @@ const NamesForm = ({ newPerson, setNewPerson, handleAddPerson, handleUpdatePerso
   return (
     <div className="input-button-container">
       <input
-        className='names-form-input'
+        className="names-form-input"
         type="text"
         name="name"
         placeholder="Name"
@@ -23,12 +28,12 @@ const NamesForm = ({ newPerson, setNewPerson, handleAddPerson, handleUpdatePerso
         onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })}
       />
       <input
-        className='names-form-input'
+        className="names-form-input"
         type="number"
         name="dollars"
         placeholder="Dollars"
-        min = "0"
-        step = "10"
+        min="0"
+        step="10"
         value={newPerson.dollars}
         onChange={handleDollarsChange}
       />

@@ -1,7 +1,12 @@
-import React from 'react';
-import './NamesList.css';
+import React from "react";
+import "./NamesList.css";
 
-const NamesList = ({ people, handleEditPerson, handleDeletePerson, editIndex }) => {
+const NamesList = ({
+  people,
+  handleEditPerson,
+  handleDeletePerson,
+  editIndex,
+}) => {
   return (
     <ul className="names-list">
       {people.map((person) => (

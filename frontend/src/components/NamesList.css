@@ -17,6 +17,7 @@
 .button-container {
   display: flex;
   gap: 10px;
+  justify-content: center;
 }
 
 .button-delete {
@@ -27,8 +28,9 @@
   border: 1px solid #ddd;
   border-radius: 5px;
   width: 100%;
-  flex-grow: 1;
+  overflow: auto;
   padding: 10px;
   margin-right: 10px;
   background-color: #f9f9f9;
+  white-space: nowrap;
 }

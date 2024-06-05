@@ -1,27 +1,26 @@
-  .names-form-input{
-    width: 100%;
-    flex-grow: 1;
-    padding: 10px;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    margin-right: 10px;
-    font-size: inherit;
-  }
+.names-form-input {
+  flex-grow: 1;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-right: 10px;
+  font-size: inherit;
+}
 
-  .input-button-container {
-    display: flex;
-    margin-left: 20px;
-    margin-right: 20px;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-  }
+.input-button-container {
+  display: flex;
+  margin-left: 20px;
+  margin-right: 20px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
 
-  .button-add {
-    background-color: #4CAF50;
-  }
+.button-add {
+  background-color: #4caf50;
+}
 
-  .button-update {
-    background-color: #FFC107;
-  }
+.button-update {
+  background-color: #ffc107;
+}

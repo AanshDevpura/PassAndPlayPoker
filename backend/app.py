@@ -107,6 +107,7 @@ def get_big_blind():
         return jsonify({"error": str(e)}), 500
 
 
+
 # Deal 2 cards to each player with money and deal board cards
 # Initialize a lot of game variables
 @app.route("/poker/deal", methods=["POST"])
@@ -195,8 +196,11 @@ def deal():
 @app.route("/poker/undeal", methods=["POST"])
 def undeal():
     try:
-        people_collection.update_many({}, {"$unset": {"hand": ""}})
+        for person in people_collection.find():
+            betted_amount = person.get("betted", 0)
+            people_collection.update_one({"_id": person["_id"]}, {"$inc": {"dollars": betted_amount}})
         people_collection.update_many({}, {"$unset": {"betted": ""}})
+        people_collection.update_many({}, {"$unset": {"hand": ""}})
         people_collection.update_many({}, {"$unset": {"won": ""}})
         people_collection.update_many({}, {"$unset": {"show": ""}})
         people_collection.update_many({}, {"$unset": {"score": ""}})
@@ -245,7 +249,7 @@ def increment_game_state():
         game_state += 1
 
         # Check if game state is 4 and evaluate winner
-        if game_state == 4:
+        if game_state >= 4:
             people_collection.update_many({}, {"$set": {"show": True}})
             evaluate_winner()
         
@@ -262,6 +266,7 @@ def increment_current():
         people_collection.update_many({}, {"$set": {"show": False}})
         players_with_cards = [person for person in people if "hand" in person]
         if not players_with_cards or len(players_with_cards) == 1:
+            board_collection.update_one({}, {"$set": {"game_state": 4}})
             evaluate_winner()
             return jsonify("Game over"), 200
         players_with_moves = [person for person in people if person["dollars"] > 0 and "hand" in person]
@@ -277,6 +282,8 @@ def increment_current():
                     evaluate_winner()
                     return jsonify("Game over"), 200
                 increment_game_state()
+                if board_collection.find_one().get("game_state", 0) == 4:
+                    return jsonify("Game over"), 200
                 current = board_collection.find_one().get("post_flop_leader", -1)
                 next_round = True
             if people[current]["dollars"] > 0 and "hand" in people[current]:
@@ -396,7 +403,7 @@ def evaluate_winner():
                 for j in range(i, num_winners):
                     people_collection.update_one({"_id": winners[j]["_id"]}, {"$inc": {"dollars": win_per_winner}})
                     people_collection.update_one({"_id": winners[j]["_id"]}, {"$inc": {"won": win_per_winner}})
-        
+        people_collection.update_many({}, {"$unset": {"betted": ""}})
         board_collection.update_one({}, {"$set": {"pot": 0}})
         board_collection.update_one({}, {"$set": {"current": -1}})
         return jsonify("Winner evaluated"), 200

@@ -43,17 +43,15 @@ img {
 }
 
 .poker-name {
-  border: 1px solid #ddd;
   border-radius: 5px;
   width: 100%;
-  flex-grow: 1;
   padding: 10px;
   background-color: #f9f9f9;
   margin-right: 10px;
+  white-space: nowrap;
 }
 
 .poker-d {
-  border: 1px solid #ddd;
   border-radius: 5px;
   width: 100%;
   flex-grow: 1;
@@ -63,7 +61,6 @@ img {
 }
 
 .poker-sb {
-  border: 1px solid #ddd;
   border-radius: 5px;
   width: 100%;
   flex-grow: 1;
@@ -72,17 +69,15 @@ img {
   margin-right: 10px;
 }
 .poker-bb {
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    width: 100%;
-    flex-grow: 1;
-    padding: 10px;
-    background-color: #00ccff;
-    margin-right: 10px;
-  }
+  border-radius: 5px;
+  width: 100%;
+  flex-grow: 1;
+  padding: 10px;
+  background-color: #00ccff;
+  margin-right: 10px;
+}
 
 .poker-dollars {
-  border: 1px solid #ddd;
   border-radius: 5px;
   width: 100%;
   flex-grow: 1;
@@ -94,9 +89,76 @@ img {
   background-color: #ff0000;
 }
 
-.player-cards
-{
+.poker-won {
+  margin-left: 10px;
+  border-radius: 5px;
+  width: 100%;
+  flex-grow: 1;
+  padding: 10px;
+  background-color: #aaff00;
+}
+
+.player-cards {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.pot {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 20px;
+}
+
+.actions {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 20px;
+}
+
+.poker-score_str {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  width: 100%;
+  flex-grow: 1;
+  padding-left: 5px;
+  padding-right: 5px;
+  background-color: #e7e7e7;
+}
+
+.current {
+  background-color: #999999;
+}
+
+.current-leader {
+  border: 1px solid #ff0000;
+}
+
+.button-container2 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+}
+
+.button2 {
+  color: white;
+  background-color: #000000;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
+}
+
+.raise-input {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
 }
