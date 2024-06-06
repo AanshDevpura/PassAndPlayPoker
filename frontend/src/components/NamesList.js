@@ -12,7 +12,7 @@ const NamesList = ({
       {people.map((person) => (
         <li className="names-list-item" key={person._id}>
           <span className="list-name-and-dollars">{person.name}</span>
-          <span className="list-name-and-dollars">${person.dollars}</span>
+          <span className="list-name-and-dollars">${person.cents / 100}</span>
           <div className="button-container">
             <button
               className="button button-update"

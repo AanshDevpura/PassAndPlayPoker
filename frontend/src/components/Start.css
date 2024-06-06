@@ -1,52 +1,52 @@
 .start {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  h1 {
-    text-align: center;
-  }
-  
-  .button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    color: white;
-    background-color: #000000;
-    cursor: pointer;
-    white-space: nowrap; 
-    transition: background-color 0.3s ease;
-  }
-  
-  button:hover {
-    opacity: 0.8;
-  }
-  
-  button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
 
-  .button-poker{
-    font-size: 20px;
-  }
+h1 {
+  text-align: center;
+}
 
-  .poker-button-container {
-    display: flex;
-    justify-content: center;
-    align-self: flex-start;
-  }
+.button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  background-color: #000000;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
+}
 
-  .big-blind-input {
-    width: 100px;
-    padding: 10px;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: inherit;
-    margin-right: 10px;
-  }
+button:hover {
+  opacity: 0.7;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.button-poker {
+  font-size: 20px;
+}
+
+.poker-button-container {
+  display: flex;
+  justify-content: center;
+  align-self: flex-start;
+}
+
+.big-blind-input {
+  width: 100px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: inherit;
+  margin-right: 10px;
+}

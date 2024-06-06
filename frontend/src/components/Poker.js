@@ -64,7 +64,7 @@ function Poker({ people, setPeople }) {
   useEffect(() => {
     const handlePopState = (event) => {
       const confirmExit = window.confirm(
-        "Are you sure you want to exit the game? You will lose your progress."
+        "Are you sure you want to exit the game? The cards will be undealt and money returned."
       );
       if (confirmExit) {
         handleEditPlayers();
@@ -113,31 +113,33 @@ function Poker({ people, setPeople }) {
   };
 
   const handleRaise = async (personId, amount) => {
+    amount = Number(amount) * 100;
     const index = people.findIndex((p) => p._id === personId);
     const person = people[index];
-    amount = Number(amount);
     if (
       amount < minRaise &&
-      person.dollars >= minRaise + betPerPerson - person.betted
+      person.cents >= minRaise + betPerPerson - person.betted
     ) {
       alert(
-        `Raise amount must be at least ${minRaise} unless you are going all in`
+        `Raise amount must be at least ${
+          minRaise / 100
+        } unless you are going all in`
       );
       return;
     }
     if (
-      person.dollars < minRaise + betPerPerson - person.betted &&
-      person.dollars > amount + betPerPerson - person.betted
+      person.cents < minRaise + betPerPerson - person.betted &&
+      person.cents > amount + betPerPerson - person.betted
     ) {
       alert(
-        `To raise you must go all in with ${person.dollars} by raising ${
-          person.dollars - betPerPerson + person.betted
+        `To raise you must go all in with ${person.cents / 100} by raising ${
+          (person.cents - betPerPerson + person.betted) / 100
         }`
       );
       return;
     }
-    if (amount + betPerPerson - person.betted > person.dollars) {
-      alert(`You do not have enough money to raise ${amount}`);
+    if (amount + betPerPerson - person.betted > person.cents) {
+      alert(`You do not have enough money to raise ${amount / 100}`);
       return;
     }
     try {
@@ -253,11 +255,7 @@ function Poker({ people, setPeople }) {
                 <div
                   className={`player-info-container ${
                     index === current ? "current" : ""
-                  } ${
-                    index === currentLeader && gameState !== 4
-                      ? "current-leader"
-                      : ""
-                  }`}
+                  } ${index === currentLeader ? "current-leader" : ""}`}
                 >
                   {gameState !== -1 && index === dealer && (
                     <span className="poker-d">D</span>
@@ -271,17 +269,20 @@ function Poker({ people, setPeople }) {
                   <span className="poker-name">{person.name}</span>
                   <span
                     className={`poker-dollars ${
-                      person.dollars === 0 ? "zero-dollars" : ""
+                      person.cents === 0 ? "zero-dollars" : ""
                     }`}
                   >
-                    ${person.dollars.toFixed(2)}
+                    ${person.cents / 100}
                   </span>
                   {gameState === 4 && person.won > 0 && (
                     <span className={"poker-won"}>
-                      {"+"}${person.won.toFixed(2)}
+                      {"+"}${person.won / 100}
                     </span>
                   )}
                 </div>
+                {person.show && person.score_str && (
+                  <span className="poker-score_str">{person.score_str}</span>
+                )}
                 {person.hand && (
                   <div>
                     <div
@@ -300,11 +301,6 @@ function Poker({ people, setPeople }) {
                         </div>
                       )}
                     </div>
-                    {person.show && person.score_str && (
-                      <span className="poker-score_str">
-                        {person.score_str}
-                      </span>
-                    )}
                     {index === current && (
                       <div>
                         <div className="button-container">
@@ -328,25 +324,49 @@ function Poker({ people, setPeople }) {
                             >
                               Call:{" "}
                               {Math.min(
-                                person.dollars,
+                                person.cents,
                                 betPerPerson - person.betted
-                              )}
+                              ) / 100}
                             </button>
                           )}
                         </div>
                         {person.can_raise &&
-                          person.dollars - betPerPerson + person.betted > 0 && (
+                          person.cents - betPerPerson + person.betted > 0 && (
                             <div>
                               <input
                                 className="raise-input"
                                 type="number"
                                 value={raise}
-                                onChange={(e) => setRaise(e.target.value)}
-                                placeholder={`Min: ${Math.min(
-                                  minRaise,
-                                  person.dollars - betPerPerson + person.betted
-                                )}, Max: ${
-                                  person.dollars - betPerPerson + person.betted
+                                onChange={(e) => {
+                                  const inputValue = e.target.value;
+                                  if (
+                                    !inputValue ||
+                                    /^\d*\.?\d{0,2}$/.test(inputValue)
+                                  ) {
+                                    setRaise(inputValue);
+                                  }
+                                }}
+                                placeholder={`Min: ${
+                                  Math.min(
+                                    minRaise,
+                                    person.cents - betPerPerson + person.betted
+                                  ) / 100
+                                }, Max: ${
+                                  (person.cents -
+                                    betPerPerson +
+                                    person.betted) /
+                                  100
+                                }`}
+                                title={`Min: ${
+                                  Math.min(
+                                    minRaise,
+                                    person.cents - betPerPerson + person.betted
+                                  ) / 100
+                                }, Max: ${
+                                  (person.cents -
+                                    betPerPerson +
+                                    person.betted) /
+                                  100
                                 }`}
                               />
                               <button
@@ -405,7 +425,7 @@ function Poker({ people, setPeople }) {
           <button
             onClick={handleDeal}
             className="button button-poker"
-            disabled={people.filter((person) => person.dollars > 0).length < 2}
+            disabled={people.filter((person) => person.cents > 0).length < 2}
           >
             Deal
           </button>
@@ -414,7 +434,7 @@ function Poker({ people, setPeople }) {
           </button>
         </div>
       ) : (
-        <div className="pot">Pot: ${pot}</div>
+        <div className="pot">Pot: ${pot / 100}</div>
       )}
     </div>
   );

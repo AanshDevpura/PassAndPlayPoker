@@ -11,10 +11,14 @@ const Start = ({ people, setPeople }) => {
   const [editIndex, setEditIndex] = useState(null);
   const handleUndealCalled = useRef(false);
   const navigate = useNavigate();
+
   useEffect(() => {
-    //prevent handleUndeal from being called multiple times
+    const fetchData = async () => {
+      await handleUndeal();
+      fetchPeople(setPeople);
+    };
     if (!handleUndealCalled.current) {
-      handleUndeal();
+      fetchData();
       handleUndealCalled.current = true;
     }
   }, []);
@@ -27,7 +31,7 @@ const Start = ({ people, setPeople }) => {
     fetchBigBlind(setBigBlind);
   }, [setBigBlind]);
 
-  const handleUndeal = async () => {
+  const handleUndeal = async (setPeople) => {
     try {
       const response = await fetch("/poker/undeal", {
         method: "POST",
@@ -77,7 +81,10 @@ const Start = ({ people, setPeople }) => {
 
   const handleEditPerson = (person) => {
     setEditIndex(person._id);
-    setNewPerson({ name: person.name, dollars: person.dollars.toString() });
+    setNewPerson({
+      name: person.name,
+      dollars: (person.cents / 100).toString(),
+    });
   };
 
   const handleUpdatePerson = async () => {
@@ -169,10 +176,22 @@ const Start = ({ people, setPeople }) => {
       setBigBlind("1000000");
       alert("The number cannot be greater than 1,000,000 dollars.");
     } else {
-      setBigBlind(e.target.value);
+      const inputValue = e.target.value;
+      if (!inputValue || /^\d*\.?\d{0,2}$/.test(inputValue)) {
+        // Check if the second decimal place is even, if it exists
+        const decimalPart = inputValue.split(".")[1];
+        if (
+          !decimalPart ||
+          decimalPart.length < 2 ||
+          decimalPart[1] % 2 === 0
+        ) {
+          setBigBlind(inputValue);
+        } else {
+          alert("The second decimal place must be even.");
+        }
+      }
     }
   };
-
   return (
     <div className="start">
       <h1>Cash In and Out</h1>
