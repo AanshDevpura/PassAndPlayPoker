@@ -3,14 +3,12 @@ import "./Start.css";
 import NamesList from "./NamesList";
 import NamesForm from "./NamesForm";
 import { fetchPeople } from "./Api";
-import { useNavigate } from "react-router-dom";
 
-const Start = ({ people, setPeople }) => {
+const Start = ({ people, setPeople, setPoker }) => {
   const [newPerson, setNewPerson] = useState({ name: "", dollars: "" });
   const [bigBlind, setBigBlind] = useState("");
   const [editIndex, setEditIndex] = useState(null);
   const handleUndealCalled = useRef(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -165,7 +163,7 @@ const Start = ({ people, setPeople }) => {
 
   const handlePlayPoker = async () => {
     await handleBigBlind();
-    navigate("/poker");
+    setPoker(true);
   };
 
   const handleBlindChange = (e) => {

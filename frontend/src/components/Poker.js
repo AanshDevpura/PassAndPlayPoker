@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchPeople } from "./Api";
 import "./Poker.css";
-import { useNavigate } from "react-router-dom";
 
 function getPlayerPosition(index, totalPlayers) {
   const width = window.innerWidth - 300;
@@ -28,7 +27,7 @@ function getPlayerPosition(index, totalPlayers) {
   return { x, y };
 }
 
-function Poker({ people, setPeople }) {
+function Poker({ people, setPeople, setPoker }) {
   const [boardCards, setBoardCards] = useState([]);
   const [gameState, setGameState] = useState(-1);
   const [current, setCurrent] = useState(-1);
@@ -41,7 +40,6 @@ function Poker({ people, setPeople }) {
   const [smallBlindPlayer, setSmallBlindPLayer] = useState(-1);
   const [bigBlindPlayer, setBigBlindPlayer] = useState(-1);
   const [playerPositions, setPlayerPositions] = useState([]);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPeople(setPeople);
@@ -62,23 +60,20 @@ function Poker({ people, setPeople }) {
   }, [people]);
 
   useEffect(() => {
-    const handlePopState = (event) => {
-      const confirmExit = window.confirm(
-        "Are you sure you want to exit the game? The cards will be undealt and money returned."
-      );
-      if (confirmExit) {
-        handleEditPlayers();
-      } else {
-        window.history.pushState(null, document.title, window.location.href);
+    const handleBeforeUnload = (event) => {
+      if (gameState === 4 || gameState === -1) {
+        return;
       }
+      event.preventDefault();
+      return (event.returnValue = "");
     };
 
-    window.history.pushState(null, document.title, window.location.href);
-    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [navigate]);
+  }, [gameState]);
 
   const getBoardVariables = async () => {
     try {
@@ -237,7 +232,7 @@ function Poker({ people, setPeople }) {
   };
 
   const handleEditPlayers = async () => {
-    navigate("/");
+    setPoker(false);
   };
 
   return (
