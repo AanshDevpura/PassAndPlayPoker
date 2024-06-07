@@ -43,7 +43,7 @@ def generate_unique_id():
 @app.route("/games", methods=["POST"])
 def create_game():
     try:
-        game_id = generate_unique_id()
+        game_id = str(generate_unique_id())
         board_collection.insert_one({"game_id": game_id})
         return jsonify({"game_id": str(game_id)}), 201
     except Exception as e:
@@ -314,7 +314,7 @@ def increment_current(game_id):
         return jsonify({"error": str(e)}), 500
 
 # Raise the bet by a certain amount
-@app.route("/games/<string:game_id>/raise/<string:person_id>", methods=["POST"])
+@app.route("/games/<string:game_id>/poker/raise/<string:person_id>", methods=["POST"])
 def raise_cents(game_id,person_id):
     try:
         original_amount = int(request.json.get("amount"))    

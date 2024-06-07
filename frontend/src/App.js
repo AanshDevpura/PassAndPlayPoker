@@ -5,8 +5,8 @@ import Poker from "./components/Poker";
 
 function App() {
   const [people, setPeople] = useState([]);
-  const [poker, setPoker] = useState(false);
-  const [gameId, setGameId] = useState(null);
+  const [poker, setPoker] = useState(localStorage.getItem("poker") === "true");
+  const [gameId, setGameId] = useState(localStorage.getItem("gameId") || null);
   const handleCreateGameCalled = useRef(false);
 
   const handleCreateGame = async () => {
@@ -48,10 +48,39 @@ function App() {
     }
   }, [gameId]);
 
+  useEffect(() => {
+    localStorage.setItem("poker", poker);
+  }, [poker]);
+
+  useEffect(() => {
+    localStorage.setItem("gameId", gameId);
+  }, [gameId]);
+
+  useEffect(() => {
+    const handleUnload = () => {
+      handleDeleteGame(gameId);
+      localStorage.removeItem("poker");
+      localStorage.removeItem("gameId");
+    };
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "Are you sure you want to exit?";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("unload", handleUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("unload", handleUnload);
+    };
+  }, [gameId]);
+
   return (
     <div>
       {gameId === null ? (
-        <div>Loading...</div>
+        <h1>Loading...</h1>
       ) : poker ? (
         <Poker
           people={people}
