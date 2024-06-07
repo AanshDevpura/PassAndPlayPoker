@@ -27,7 +27,7 @@ function getPlayerPosition(index, totalPlayers) {
   return { x, y };
 }
 
-function Poker({ people, setPeople, setPoker }) {
+function Poker({ people, setPeople, setPoker, gameId }) {
   const [boardCards, setBoardCards] = useState([]);
   const [gameState, setGameState] = useState(-2);
   const [current, setCurrent] = useState(-1);
@@ -42,9 +42,12 @@ function Poker({ people, setPeople, setPoker }) {
   const [playerPositions, setPlayerPositions] = useState([]);
 
   useEffect(() => {
-    fetchPeople(setPeople);
+    fetchPeople(gameId, setPeople);
+  }, [setPeople, gameId]);
+
+  useEffect(() => {
     getBoardVariables();
-  }, [setPeople]);
+  }, []);
 
   useEffect(() => {
     const updatePlayerPositions = () => {
@@ -61,7 +64,7 @@ function Poker({ people, setPeople, setPoker }) {
 
   const getBoardVariables = async () => {
     try {
-      const response = await fetch("/poker/board", {
+      const response = await fetch(`/games/${gameId}/poker/board`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -122,7 +125,7 @@ function Poker({ people, setPeople, setPoker }) {
       return;
     }
     try {
-      const response = await fetch(`/poker/raise/${personId}`, {
+      const response = await fetch(`/games/${gameId}/poker/raise/${personId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -132,7 +135,7 @@ function Poker({ people, setPeople, setPoker }) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      fetchPeople(setPeople);
+      fetchPeople(gameId, setPeople);
       getBoardVariables();
     } catch (error) {
       console.error("Error raising:", error);
@@ -141,7 +144,7 @@ function Poker({ people, setPeople, setPoker }) {
 
   const handleCall = async (personId) => {
     try {
-      const response = await fetch(`/poker/call/${personId}`, {
+      const response = await fetch(`/games/${gameId}/poker/call/${personId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -150,7 +153,7 @@ function Poker({ people, setPeople, setPoker }) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      fetchPeople(setPeople);
+      fetchPeople(gameId, setPeople);
       getBoardVariables();
     } catch (error) {
       console.error("Error calling:", error);
@@ -159,7 +162,7 @@ function Poker({ people, setPeople, setPoker }) {
 
   const handleFold = async (personId) => {
     try {
-      const response = await fetch(`/poker/fold/${personId}`, {
+      const response = await fetch(`/games/${gameId}/poker/fold/${personId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -168,7 +171,7 @@ function Poker({ people, setPeople, setPoker }) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      fetchPeople(setPeople);
+      fetchPeople(gameId, setPeople);
       getBoardVariables();
     } catch (error) {
       console.error("Error folding:", error);
@@ -177,7 +180,7 @@ function Poker({ people, setPeople, setPoker }) {
 
   const handleDeal = async () => {
     try {
-      const response = await fetch("/poker/deal", {
+      const response = await fetch(`/games/${gameId}/poker/deal`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -187,7 +190,7 @@ function Poker({ people, setPeople, setPoker }) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      fetchPeople(setPeople);
+      fetchPeople(gameId, setPeople);
       getBoardVariables();
     } catch (error) {
       console.error("Error dealing:", error);
@@ -199,7 +202,7 @@ function Poker({ people, setPeople, setPoker }) {
       return;
     }
     try {
-      const response = await fetch(`/poker/show/${personId}`, {
+      const response = await fetch(`/games/${gameId}/poker/show/${personId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -209,7 +212,7 @@ function Poker({ people, setPeople, setPoker }) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      fetchPeople(setPeople);
+      fetchPeople(gameId, setPeople);
     } catch (error) {
       console.error("Error showing hand:", error);
     }

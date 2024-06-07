@@ -4,47 +4,50 @@ import NamesList from "./NamesList";
 import NamesForm from "./NamesForm";
 import { fetchPeople } from "./Api";
 
-const Start = ({ people, setPeople, setPoker }) => {
+const Start = ({ people, setPeople, setPoker, gameId }) => {
   const [newPerson, setNewPerson] = useState({ name: "", dollars: "" });
   const [bigBlind, setBigBlind] = useState("");
   const [editIndex, setEditIndex] = useState(null);
   const handleUndealCalled = useRef(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      await handleUndeal();
-      fetchPeople(setPeople);
+    const handleUndeal = async () => {
+      try {
+        const response = await fetch(`games/${gameId}/poker/undeal`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        fetchPeople(gameId, setPeople);
+      } catch (error) {
+        console.error("Error undealing:", error);
+      }
     };
     if (!handleUndealCalled.current) {
-      fetchData();
+      handleUndeal();
       handleUndealCalled.current = true;
     }
-  }, []);
+  }, [gameId, setPeople]);
 
   useEffect(() => {
-    fetchPeople(setPeople);
-  }, [setPeople]);
-
-  useEffect(() => {
-    fetchBigBlind(setBigBlind);
-  }, [setBigBlind]);
-
-  const handleUndeal = async (setPeople) => {
-    try {
-      const response = await fetch("/poker/undeal", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    const fetchBigBlind = async (setBigBlind) => {
+      try {
+        const response = await fetch(`games/${gameId}/poker/big_blind`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setBigBlind(data);
+      } catch (error) {
+        console.error("Error fetching big blind:", error);
       }
-      fetchPeople(setPeople);
-    } catch (error) {
-      console.error("Error undealing:", error);
-    }
-  };
+    };
+    fetchBigBlind(setBigBlind);
+  }, [gameId, setBigBlind]);
 
   const handleAddPerson = async () => {
     if (people.length >= 10) {
@@ -60,7 +63,7 @@ const Start = ({ people, setPeople, setPoker }) => {
       return;
     }
     try {
-      const response = await fetch("/people", {
+      const response = await fetch(`/games/${gameId}/people`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,7 +74,7 @@ const Start = ({ people, setPeople, setPoker }) => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       setNewPerson({ ...newPerson, name: "" });
-      fetchPeople(setPeople);
+      fetchPeople(gameId, setPeople);
     } catch (error) {
       console.error("Error adding person:", error);
     }
@@ -99,7 +102,7 @@ const Start = ({ people, setPeople, setPoker }) => {
       return;
     }
     try {
-      const response = await fetch(`/people/${editIndex}`, {
+      const response = await fetch(`games/${gameId}/people/${editIndex}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -111,7 +114,7 @@ const Start = ({ people, setPeople, setPoker }) => {
       }
       setNewPerson({ ...newPerson, name: "" });
       setEditIndex(null);
-      fetchPeople(setPeople);
+      fetchPeople(gameId, setPeople);
     } catch (error) {
       console.error("Error updating person:", error);
     }
@@ -119,13 +122,13 @@ const Start = ({ people, setPeople, setPoker }) => {
 
   const handleDeletePerson = async (personId) => {
     try {
-      const response = await fetch(`/people/${personId}`, {
+      const response = await fetch(`games/${gameId}/people/${personId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      fetchPeople(setPeople);
+      fetchPeople(gameId, setPeople);
     } catch (error) {
       console.error("Error deleting person:", error);
     }
@@ -133,7 +136,7 @@ const Start = ({ people, setPeople, setPoker }) => {
 
   const handleBigBlind = async () => {
     try {
-      const response = await fetch("/poker/big_blind", {
+      const response = await fetch(`games/${gameId}/poker/big_blind`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -145,19 +148,6 @@ const Start = ({ people, setPeople, setPoker }) => {
       }
     } catch (error) {
       console.error("Error setting big blind:", error);
-    }
-  };
-
-  const fetchBigBlind = async (setBigBlind) => {
-    try {
-      const response = await fetch("/poker/big_blind");
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setBigBlind(data);
-    } catch (error) {
-      console.error("Error fetching big blind:", error);
     }
   };
 

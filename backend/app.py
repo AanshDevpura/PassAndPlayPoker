@@ -40,7 +40,6 @@ def generate_unique_id():
         if not board_collection.find_one({"game_id": unique_id}):
             return unique_id
 
-# Create a new game session
 @app.route("/games", methods=["POST"])
 def create_game():
     try:
@@ -50,11 +49,11 @@ def create_game():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Delete a game session
 @app.route("/games/<string:game_id>", methods=["DELETE"])
 def delete_game(game_id):
     try:
         board_collection.delete_one({"game_id": game_id})
+        people_collection.delete_many({"game_id": game_id})
         return jsonify("Game deleted"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -74,7 +73,7 @@ def add_person(game_id):
     new_person["cents"] = (int(float(new_person.get("dollars", 0)) * 100))
     new_person.pop("dollars", None) 
     new_person["game_id"] = game_id
-    result = people_collection.insert_one(new_person)
+    people_collection.insert_one(new_person)
     return jsonify("Person added"), 201
 
 # Modify an existing person
