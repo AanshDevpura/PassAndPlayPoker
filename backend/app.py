@@ -34,7 +34,7 @@ clear_database()
 def generate_unique_id():
     while True:
         # Generate a random 6-digit ID
-        unique_id = random.randint(100000, 999999)
+        unique_id = str(random.randint(100000, 999999))
         
         # Check if the ID already exists in the collection
         if not board_collection.find_one({"game_id": unique_id}):
@@ -43,13 +43,13 @@ def generate_unique_id():
 @app.route("/games", methods=["POST"])
 def create_game():
     try:
-        game_id = str(generate_unique_id())
+        game_id = generate_unique_id()
         board_collection.insert_one({"game_id": game_id})
         return jsonify({"game_id": str(game_id)}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/games/<string:game_id>", methods=["DELETE"])
+@app.route("/games/delete/<string:game_id>", methods=["POST"])
 def delete_game(game_id):
     try:
         board_collection.delete_one({"game_id": game_id})
@@ -128,10 +128,14 @@ def get_big_blind(game_id):
     try:
         board = board_collection.find_one({"game_id": game_id})
         if board:
-            big_blind_value_dollars = float(board.get("big_blind_value", 0)) / 100
-            return jsonify(big_blind_value_dollars), 200
+            big_blind_value = board.get("big_blind_value", None)
+            if big_blind_value is not None:
+                big_blind_value_dollars = float(big_blind_value) / 100
+                return jsonify(big_blind_value_dollars), 200
+            else:
+                return jsonify(""), 200  # Return empty string if big blind doesn't exist or is 0
         else:
-            return jsonify(''), 200
+            return jsonify(""), 200  # Return empty string if board doesn't exist
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

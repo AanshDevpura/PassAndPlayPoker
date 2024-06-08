@@ -27,17 +27,21 @@ function App() {
     }
   };
 
-  const handleDeleteGame = async (gameId) => {
-    try {
-      const response = await fetch(`/games/${gameId}`, {
+  const handleDeleteGame = (gameId) => {
+    const url = `/games/delete/${gameId}`;
+    const data = JSON.stringify({});
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(url, data);
+    } else {
+      fetch(url, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: data,
+      }).catch((error) => {
+        console.error("Error deleting game:", error);
       });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      setGameId(null);
-    } catch (error) {
-      console.error("Error deleting game:", error);
     }
   };
 
@@ -58,7 +62,9 @@ function App() {
 
   useEffect(() => {
     const handleUnload = () => {
-      handleDeleteGame(gameId);
+      if (gameId) {
+        handleDeleteGame(gameId);
+      }
       localStorage.removeItem("poker");
       localStorage.removeItem("gameId");
     };
