@@ -20,6 +20,17 @@ board_collection = db["board"]
 app = Flask(__name__)
 CORS(app)
 
+# Clear the database on startup (optional)
+def clear_database():
+    try:
+        people_collection.delete_many({})
+        board_collection.delete_many({})
+        print("Database cleared successfully")
+    except Exception as e:
+        print("Error clearing database:", str(e))
+
+#clear_database()
+
 def generate_unique_id():
     while True:
         # Generate a random 6-digit ID
@@ -29,6 +40,7 @@ def generate_unique_id():
         if not board_collection.find_one({"game_id": unique_id}):
             return unique_id
 
+# Create a new game with id
 @app.route("/games", methods=["POST"])
 def create_game():
     try:
@@ -38,6 +50,8 @@ def create_game():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Delete a game with id
+# Must be post because its on unload
 @app.route("/games/delete/<string:game_id>", methods=["POST"])
 def delete_game(game_id):
     try:
@@ -424,7 +438,6 @@ def evaluate_winner(game_id):
                         adjusted_win_per_winner = win_per_winner
                     people_collection.update_one({"_id": winners[j]["_id"], "game_id": game_id}, {"$inc": {"cents": adjusted_win_per_winner}})
                     people_collection.update_one({"_id": winners[j]["_id"], "game_id": game_id}, {"$inc": {"won": adjusted_win_per_winner}})
-        people_collection.update_many({"game_id": game_id}, {"$unset": {"betted": ""}})
         board_collection.update_one({"game_id": game_id}, {"$set": {"pot": 0}})
         board_collection.update_one({"game_id": game_id}, {"$set": {"current": -1}})
         board_collection.update_one({"game_id": game_id}, {"$set": {"current_leader": -1}})
