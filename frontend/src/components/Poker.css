@@ -80,6 +80,14 @@ img {
   margin-right: 10px;
 }
 
+.current {
+  background-color: #999999;
+}
+
+.current-leader {
+  border: 1px solid #ff0000;
+}
+
 .poker-dollars {
   border-radius: 5px;
   padding: 10px;
@@ -122,14 +130,6 @@ img {
   border-radius: 5px;
   padding: 10px;
   font-size: 20px;
-}
-
-.current {
-  background-color: #999999;
-}
-
-.current-leader {
-  border: 1px solid #ff0000;
 }
 
 .button-container2 {

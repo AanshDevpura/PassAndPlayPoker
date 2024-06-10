@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { fetchPeople } from "./Api";
 import "./Poker.css";
 
 function getPlayerPosition(index, totalPlayers) {
@@ -27,7 +26,7 @@ function getPlayerPosition(index, totalPlayers) {
   return { x, y };
 }
 
-function Poker({ people, setPeople, setPoker, gameId }) {
+function Poker({ people, setPeople, setPoker, gameId, fetchPeople }) {
   const [boardCards, setBoardCards] = useState([]);
   const [gameState, setGameState] = useState(-2);
   const [current, setCurrent] = useState(-1);

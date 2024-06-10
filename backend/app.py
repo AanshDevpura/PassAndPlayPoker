@@ -20,17 +20,6 @@ board_collection = db["board"]
 app = Flask(__name__)
 CORS(app)
 
-# Clear the database on startup (optional)
-def clear_database():
-    try:
-        people_collection.delete_many({})
-        board_collection.delete_many({})
-        print("Database cleared successfully")
-    except Exception as e:
-        print("Error clearing database:", str(e))
-
-clear_database()
-
 def generate_unique_id():
     while True:
         # Generate a random 6-digit ID
@@ -215,7 +204,7 @@ def deal(game_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Undeal all cards and reset the game variables
+# Reset the game variables
 @app.route("/games/<string:game_id>/poker/undeal", methods=["POST"])
 def undeal(game_id):
     try:
@@ -248,6 +237,7 @@ def undeal(game_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Show the cards of a player
 @app.route("/games/<string:game_id>/poker/show/<string:person_id>", methods=["POST"])
 def show(game_id,person_id):
     try:

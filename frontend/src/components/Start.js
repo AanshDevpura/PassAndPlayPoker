@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import "./Start.css";
 import NamesList from "./NamesList";
 import NamesForm from "./NamesForm";
-import { fetchPeople } from "./Api";
 
-const Start = ({ people, setPeople, setPoker, gameId }) => {
+const Start = ({ people, setPeople, setPoker, gameId, fetchPeople }) => {
   const [newPerson, setNewPerson] = useState({ name: "", dollars: "" });
   const [bigBlind, setBigBlind] = useState("");
   const [editIndex, setEditIndex] = useState(null);
