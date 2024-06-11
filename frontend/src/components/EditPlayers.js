@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import "./Start.css";
+import "./EditPlayers.css";
 import NamesList from "./NamesList";
 import NamesForm from "./NamesForm";
 
-const Start = ({ people, setPeople, setPoker, gameId, fetchPeople }) => {
+const EditPlayers = ({ people, setPeople, setPoker, gameId, fetchPeople }) => {
   const [newPerson, setNewPerson] = useState({ name: "", dollars: "" });
   const [bigBlind, setBigBlind] = useState("");
   const [editIndex, setEditIndex] = useState(null);
@@ -180,7 +180,7 @@ const Start = ({ people, setPeople, setPoker, gameId, fetchPeople }) => {
     }
   };
   return (
-    <div className="start">
+    <div className="edit-players">
       <h1>Cash In and Out</h1>
       <NamesForm
         newPerson={newPerson}
@@ -216,4 +216,4 @@ const Start = ({ people, setPeople, setPoker, gameId, fetchPeople }) => {
   );
 };
 
-export default Start;
+export default EditPlayers;

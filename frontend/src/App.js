@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import Start from "./components/Start";
+import EditPlayers from "./components/EditPlayers";
 import Poker from "./components/Poker";
 
 function App() {
@@ -99,7 +99,7 @@ function App() {
           fetchPeople={fetchPeople}
         />
       ) : (
-        <Start
+        <EditPlayers
           people={people}
           setPeople={setPeople}
           setPoker={setPoker}
