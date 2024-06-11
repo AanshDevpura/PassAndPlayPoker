@@ -4,14 +4,14 @@ import pymongo
 from bson import ObjectId, errors
 import certifi
 import random
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 import os
 from poker import Deck, best_value, value_to_str
 
 # Connect to MongoDB cluster
-load_dotenv()
+#load_dotenv()
 cluster = pymongo.MongoClient(
-    "mongodb+srv://adevpura05:Devpura1@cluster0.yzk2hoy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    os.getenv("MONGO_URI"),
     tlsCAFile=certifi.where()
 )
 
