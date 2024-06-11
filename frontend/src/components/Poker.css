@@ -22,7 +22,7 @@ img {
 }
 
 .outer-player-container {
-  width: calc(max(8vw, 280px));
+  max-width: max(8vw, 280px);
   display: flex;
   flex-direction: column;
   position: absolute;
