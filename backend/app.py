@@ -19,7 +19,8 @@ db = cluster["cluster0"]
 people_collection = db["people"]
 board_collection = db["board"]
 
-app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
+app = Flask(__name__)
+#app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
 CORS(app)
 
 @app.route("/")
