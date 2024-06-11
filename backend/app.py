@@ -1,15 +1,17 @@
-from flask import Flask, request, jsonify #
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pymongo
 from bson import ObjectId, errors
 import certifi
 import random
+from dotenv import load_dotenv
 import os
 from poker import Deck, best_value, value_to_str
 
 # Connect to MongoDB cluster
+load_dotenv()
 cluster = pymongo.MongoClient(
-    os.getenv("MONGO_URI"),
+    os.environ.get("MONGO_URI"),
     tlsCAFile=certifi.where()
 )
 
@@ -439,5 +441,5 @@ def evaluate_winner(game_id):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug = True)
+    app.run()
 
