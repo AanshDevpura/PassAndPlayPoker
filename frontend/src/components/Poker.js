@@ -28,7 +28,7 @@ function getPlayerPosition(index, totalPlayers) {
 
 function Poker({ people, setPeople, setPoker, gameId, fetchPeople }) {
   const [boardCards, setBoardCards] = useState([]);
-  const [gameState, setGameState] = useState(-2);
+  const [gameState, setGameState] = useState(-1);
   const [current, setCurrent] = useState(-1);
   const [currentLeader, setCurrentLeader] = useState(-1);
   const [betPerPerson, setBetPerPerson] = useState(0);
@@ -400,23 +400,22 @@ function Poker({ people, setPeople, setPoker, gameId, fetchPeople }) {
           </div>
         </div>
       )}
-      {gameState !== -2 &&
-        (gameState === 4 || gameState === -1 ? (
-          <div className="actions button-container2">
-            <button
-              onClick={handleDeal}
-              className="button button-poker"
-              disabled={people.filter((person) => person.cents > 0).length < 2}
-            >
-              Deal
-            </button>
-            <button onClick={handleEditPlayers} className="button button-poker">
-              Edit Players
-            </button>
-          </div>
-        ) : (
-          <div className="pot">Pot: ${pot / 100}</div>
-        ))}
+      {gameState === 4 || gameState === -1 ? (
+        <div className="actions button-container2">
+          <button
+            onClick={handleDeal}
+            className="button button-poker"
+            disabled={people.filter((person) => person.cents > 0).length < 2}
+          >
+            Deal
+          </button>
+          <button onClick={handleEditPlayers} className="button button-poker">
+            Edit Players
+          </button>
+        </div>
+      ) : (
+        <div className="pot">Pot: ${pot / 100}</div>
+      )}
     </div>
   );
 }

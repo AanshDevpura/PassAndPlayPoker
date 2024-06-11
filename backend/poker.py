@@ -103,7 +103,6 @@ def best_value(seven_hand):
         best = max(best, hand_value(five_hand))
     return best
 
-
 def value_to_str(value):
     hand_type = value >> 20
     hand_values = [reverse_card_values[(value >> (4 * i)) & 15] for i in range(5)]

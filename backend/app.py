@@ -1,15 +1,15 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify #
 from flask_cors import CORS
 import pymongo
-from pymongo import MongoClient
 from bson import ObjectId, errors
 import certifi
 import random
+import os
 from poker import Deck, best_value, value_to_str
 
 # Connect to MongoDB cluster
-cluster = MongoClient(
-    "mongodb+srv://adevpura05:Devpura1@cluster0.yzk2hoy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+cluster = pymongo.MongoClient(
+    os.getenv("MONGO_URI"),
     tlsCAFile=certifi.where()
 )
 
@@ -17,19 +17,12 @@ db = cluster["cluster0"]
 people_collection = db["people"]
 board_collection = db["board"]
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
 CORS(app)
 
-# Clear the database on startup (optional)
-def clear_database():
-    try:
-        people_collection.delete_many({})
-        board_collection.delete_many({})
-        print("Database cleared successfully")
-    except Exception as e:
-        print("Error clearing database:", str(e))
-
-#clear_database()
+@app.route("/")
+def index():
+    return app.send_static_file("index.html")
 
 def generate_unique_id():
     while True:
@@ -446,5 +439,5 @@ def evaluate_winner(game_id):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
 
