@@ -11,7 +11,7 @@ from poker import Deck, best_value, value_to_str
 # Connect to MongoDB cluster
 load_dotenv()
 cluster = pymongo.MongoClient(
-    os.getenv("MONGO_URI"),
+    "mongodb+srv://adevpura05:Devpura1@cluster0.yzk2hoy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
     tlsCAFile=certifi.where()
 )
 
