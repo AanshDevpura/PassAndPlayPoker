@@ -9,6 +9,7 @@
 }
 
 .input-button-container {
+  max-width: min(100%, 600px);
   display: flex;
   margin-left: 20px;
   margin-right: 20px;
