@@ -6,7 +6,7 @@ import certifi
 import random
 from dotenv import load_dotenv
 import os
-from poker_tools import Deck, best_value, value_to_str
+from poker import Deck, best_value, value_to_str
 
 # Connect to MongoDB cluster
 load_dotenv()
