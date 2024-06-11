@@ -1,5 +1,5 @@
 .edit-players {
-  max-width: calc(min(100%, 600px));
+  max-width: min(100%, 600px);
   margin: 0 auto;
   padding: 20px;
   background: #ffffff;
