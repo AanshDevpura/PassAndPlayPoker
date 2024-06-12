@@ -10,4 +10,4 @@ Pass-and-Play Poker allows many people to play poker in person from a single (la
 
 ### Explanation
 
-The flask backend manages game instances and people through a mongoDB database. It also handles many poker specific functions. The frontend was written in react and makes the game intuitive to play.
+The flask backend manages games and people through a mongoDB database. It also handles many poker specific functions. The frontend was written in react and makes the game intuitive to play.
